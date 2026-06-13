@@ -42,6 +42,7 @@
                 <div class="flex flex-col gap-1">
                     <label class="font-bold">Result</label>
                     <select id="edit-result-status" class="border-2 rounded-lg w-full p-3 bg-gray-50 font-bold">
+                        <option value="-">-</option>
                         <option value="GS敗退">GS敗退</option>
                         <option value="ベスト32">ベスト32</option>
                         <option value="ベスト16">ベスト16</option>
@@ -62,7 +63,7 @@
 
     <script>
         // 【重要】新しいGAS URLに書き換えてください
-        const API_URL = "https://script.google.com/macros/s/AKfycbxLQj9eIlACr8jF__uRRRs_PaJyC2VHu1WMRBTwQgi4wXvMM1mzIAICghi6mtEsxZ1H/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxKY1FwrajSsVmJIMI3fSQomSDp6oFyIciQ4uEPHWhn6MTxZld062u5FcNkJsOdSD9Q/exec";
 
         const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca" };
 
@@ -86,96 +87,4 @@
                 return acc;
             }, {});
 
-            container.innerHTML = Object.keys(groups).sort().map(groupName => `
-                <div class="mb-4">
-                    <div class="bg-blue-900 text-white p-2 px-4 font-bold text-[10px]">GROUP ${groupName}</div>
-                    <div class="row-container header-row">
-                        <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">WIN</div><div class="col-val">DRAW</div><div class="col-val">LOSE</div><div class="col-result">RESULT</div><div class="col-edit"></div>
-                    </div>
-                    ${groups[groupName].map(row => `
-                        <div class="row-container" onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
-                            <div class="col-team">
-                                <img src="https://flagcdn.com/w40/${flagMap[row.Team.toString().toLowerCase().trim()] || 'un'}.png" class="flag-icon">
-                                <span class="truncate">${row.Team}</span>
-                            </div>
-                            <div class="col-player truncate">${row.Player || '-'}</div>
-                            <div class="col-val">${row.Win || 0}</div>
-                            <div class="col-val">${row.Draw || 0}</div>
-                            <div class="col-val">${row.Lose || 0}</div>
-                            <div class="col-result truncate">${row.Result || '-'}</div>
-                            <div class="col-edit text-[10px]">✎</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
-        }
-
-        function renderPlayers(data) {
-            const container = document.getElementById('player-list');
-            const players = data.reduce((acc, row) => {
-                const p = row.Player || "Unknown";
-                const total = row["Total Points"] || row["TotalPoints"] || 0;
-                if (!acc[p]) acc[p] = { teams: [], total: total };
-                acc[p].teams.push(row);
-                return acc;
-            }, {});
-
-            container.innerHTML = Object.entries(players).map(([name, info]) => `
-                <div class="mb-6 bg-white shadow-sm overflow-hidden">
-                    <div class="bg-gray-800 text-white p-4 flex justify-between items-center px-4">
-                        <span class="text-lg font-bold">${name}</span>
-                        <div class="text-right"><span class="text-[10px] block text-gray-400">TOTAL</span><span class="text-2xl font-black text-yellow-400">${info.total}</span></div>
-                    </div>
-                    ${info.teams.map(t => `
-                        <div class="flex p-3 border-b text-sm items-center">
-                            <div class="flex-1 flex items-center font-bold">
-                                <img src="https://flagcdn.com/w40/${flagMap[t.Team.toString().toLowerCase().trim()] || 'un'}.png" class="flag-icon">
-                                <span>${t.Team}</span>
-                            </div>
-                            <div class="flex-1 text-center text-gray-600 text-xs">${t.Result || '-'}</div>
-                            <div class="flex-1 text-right font-bold text-blue-600">${t.Points || 0} pt</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
-        }
-
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-        }
-
-        let editingTeam = "";
-        function openModal(team, win, draw, lose, status) {
-            editingTeam = team;
-            document.getElementById('modal-team-name').innerText = team;
-            document.getElementById('edit-win').value = win;
-            document.getElementById('edit-draw').value = draw;
-            document.getElementById('edit-lose').value = lose;
-            document.getElementById('edit-result-status').value = status;
-            document.getElementById('edit-modal').classList.remove('hidden');
-            const btn = document.getElementById('save-btn');
-            btn.innerText = "Save"; btn.disabled = false;
-        }
-
-        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-
-        async function submitUpdate() {
-            const btn = document.getElementById('save-btn');
-            const payload = {
-                team: editingTeam,
-                win: parseInt(document.getElementById('edit-win').value) || 0,
-                draw: parseInt(document.getElementById('edit-draw').value) || 0,
-                lose: parseInt(document.getElementById('edit-lose').value) || 0,
-                resultStatus: document.getElementById('edit-result-status').value
-            };
-            btn.innerText = "Saving..."; btn.disabled = true;
-            try {
-                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
-                setTimeout(async () => { await loadData(); closeModal(); }, 1200);
-            } catch (e) { alert("Error!"); btn.innerText = "Save"; btn.disabled = false; }
-        }
-        loadData();
-    </script>
-</body>
-</html>
+            container.innerHTML = Object.keys(groups).sort(
