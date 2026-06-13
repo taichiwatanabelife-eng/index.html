@@ -9,43 +9,22 @@
         body { font-family: -apple-system, sans-serif; background: #f4f7f9; }
         .tab-content { display: none; padding-bottom: 100px; }
         .active { display: block; }
-        
-        /* iPhone 15(393px)に収めるための横並び設定 */
-        .row-container {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            background: white;
-            border-bottom: 1px solid #edf2f7;
-            padding: 12px 4px;
-            white-space: nowrap; /* 絶対に改行させない */
-            font-size: 11px;
-        }
+        .row-container { display: flex; align-items: center; width: 100%; background: white; border-bottom: 1px solid #edf2f7; padding: 12px 4px; white-space: nowrap; font-size: 11px; }
         .header-row { background: #f8fafc; font-weight: bold; color: #64748b; font-size: 10px; }
-
-        /* 列の幅を固定 (合計385px程度) */
         .col-team   { width: 105px; display: flex; align-items: center; font-weight: 800; overflow: hidden; padding-left: 4px; }
         .col-player { width: 70px;  color: #94a3b8; overflow: hidden; text-overflow: ellipsis; }
         .col-val    { width: 32px;  text-align: center; font-weight: bold; }
         .col-result { width: 85px;  text-align: center; font-weight: 900; color: #2563eb; }
         .col-edit   { width: 25px;  text-align: center; color: #cbd5e1; }
-
         .flag-icon { width: 18px; height: 12px; margin-right: 4px; border: 1px solid #eee; flex-shrink: 0; }
-
-        /* ナビゲーション */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; padding: 15px; z-index: 50; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .nav-item { color: white; text-align: center; font-size: 16px; font-weight: bold; flex: 1; }
     </style>
 </head>
 <body>
 
-    <div id="result-tab" class="tab-content active">
-        <div id="result-list">読み込み中...</div>
-    </div>
-
-    <div id="player-tab" class="tab-content">
-        <div id="player-list">読み込み中...</div>
-    </div>
+    <div id="result-tab" class="tab-content active"><div id="result-list">読み込み中...</div></div>
+    <div id="player-tab" class="tab-content"><div id="player-list">読み込み中...</div></div>
 
     <nav class="bottom-nav">
         <button onclick="showTab('result-tab')" class="nav-item">Result</button>
@@ -54,7 +33,7 @@
 
     <!-- 編集モーダル -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[100]">
-        <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+        <div class="bg-white p-6 rounded-2xl w-full max-sm shadow-2xl">
             <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-blue-900 text-center">Update</h2>
             <div class="space-y-4">
                 <div class="flex justify-between items-center"><label class="font-bold">Win</label><input type="number" id="edit-win" class="border-2 rounded-lg w-24 p-2 text-center text-lg font-bold bg-gray-50"></div>
@@ -64,10 +43,11 @@
                     <label class="font-bold">Result</label>
                     <select id="edit-result-status" class="border-2 rounded-lg w-full p-3 bg-gray-50 font-bold">
                         <option value="GS敗退">GS敗退</option>
-                        <option value="Best 32">Best 32</option>
-                        <option value="Best 16">Best 16</option>
-                        <option value="Best 8">Best 8</option>
-                        <option value="準決勝">準決勝</option>
+                        <option value="ベスト32">ベスト32</option>
+                        <option value="ベスト16">ベスト16</option>
+                        <option value="ベスト8">ベスト8</option>
+                        <option value="4位">4位</option>
+                        <option value="3位">3位</option>
                         <option value="準優勝">準優勝</option>
                         <option value="優勝">優勝</option>
                     </select>
@@ -81,10 +61,10 @@
     </div>
 
     <script>
-        // 【重要】ご自身のGAS URLに書き換えてください
-        const API_URL = "https://script.google.com/macros/s/AKfycbyK5V7biv4_Bx6t1zR7ja-KF6YJFxxr8dZVtAWt9ITUpoeeQlK1GbWANvWIlP8LQOlv/exec";
+        // 【重要】新しいGAS URLに書き換えてください
+        const API_URL = "https://script.google.com/macros/s/AKfycbxLQj9eIlACr8jF__uRRRs_PaJyC2VHu1WMRBTwQgi4wXvMM1mzIAICghi6mtEsxZ1H/exec";
 
-        const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "カナダ": "ca" };
+        const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca" };
 
         let currentData = null;
 
@@ -110,18 +90,12 @@
                 <div class="mb-4">
                     <div class="bg-blue-900 text-white p-2 px-4 font-bold text-[10px]">GROUP ${groupName}</div>
                     <div class="row-container header-row">
-                        <div class="col-team text-left">TEAM</div>
-                        <div class="col-player">PLAYER</div>
-                        <div class="col-val">WIN</div>
-                        <div class="col-val">DRAW</div>
-                        <div class="col-val">LOSE</div>
-                        <div class="col-result">RESULT</div>
-                        <div class="col-edit"></div>
+                        <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">WIN</div><div class="col-val">DRAW</div><div class="col-val">LOSE</div><div class="col-result">RESULT</div><div class="col-edit"></div>
                     </div>
                     ${groups[groupName].map(row => `
                         <div class="row-container" onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
                             <div class="col-team">
-                                <img src="https://flagcdn.com/w40/${flagMap[row.Team.trim()] || 'un'}.png" class="flag-icon">
+                                <img src="https://flagcdn.com/w40/${flagMap[row.Team.toString().toLowerCase().trim()] || 'un'}.png" class="flag-icon">
                                 <span class="truncate">${row.Team}</span>
                             </div>
                             <div class="col-player truncate">${row.Player || '-'}</div>
@@ -150,18 +124,12 @@
                 <div class="mb-6 bg-white shadow-sm overflow-hidden">
                     <div class="bg-gray-800 text-white p-4 flex justify-between items-center px-4">
                         <span class="text-lg font-bold">${name}</span>
-                        <div class="text-right">
-                            <span class="text-[10px] block text-gray-400">TOTAL</span>
-                            <span class="text-2xl font-black text-yellow-400">${info.total}</span>
-                        </div>
-                    </div>
-                    <div class="flex bg-gray-50 p-2 text-[10px] font-bold text-gray-500 border-b">
-                        <div class="flex-1">TEAM</div><div class="flex-1 text-center">RESULT</div><div class="flex-1 text-right">POINTS</div>
+                        <div class="text-right"><span class="text-[10px] block text-gray-400">TOTAL</span><span class="text-2xl font-black text-yellow-400">${info.total}</span></div>
                     </div>
                     ${info.teams.map(t => `
                         <div class="flex p-3 border-b text-sm items-center">
                             <div class="flex-1 flex items-center font-bold">
-                                <img src="https://flagcdn.com/w40/${flagMap[t.Team.trim()] || 'un'}.png" class="flag-icon">
+                                <img src="https://flagcdn.com/w40/${flagMap[t.Team.toString().toLowerCase().trim()] || 'un'}.png" class="flag-icon">
                                 <span>${t.Team}</span>
                             </div>
                             <div class="flex-1 text-center text-gray-600 text-xs">${t.Result || '-'}</div>
@@ -186,54 +154,27 @@
             document.getElementById('edit-lose').value = lose;
             document.getElementById('edit-result-status').value = status;
             document.getElementById('edit-modal').classList.remove('hidden');
-            
-            // ボタンをリセット
             const btn = document.getElementById('save-btn');
-            btn.innerText = "Save";
-            btn.disabled = false;
+            btn.innerText = "Save"; btn.disabled = false;
         }
 
-        function closeModal() {
-            document.getElementById('edit-modal').classList.add('hidden');
-        }
+        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
 
         async function submitUpdate() {
             const btn = document.getElementById('save-btn');
-            // チーム名の前後の空白を確実に除去して送信
             const payload = {
-                team: editingTeam.trim(), 
+                team: editingTeam,
                 win: parseInt(document.getElementById('edit-win').value) || 0,
                 draw: parseInt(document.getElementById('edit-draw').value) || 0,
                 lose: parseInt(document.getElementById('edit-lose').value) || 0,
                 resultStatus: document.getElementById('edit-result-status').value
             };
-
-            btn.innerText = "Saving...";
-            btn.disabled = true;
-
+            btn.innerText = "Saving..."; btn.disabled = true;
             try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    mode: 'no-cors',
-                    body: JSON.stringify(payload)
-                });
-
-                // 反映時間を待ってリロード
-                setTimeout(async () => {
-                    await loadData();
-                    closeModal();
-                    // モーダルを閉じた後にボタンを復活（何度でも編集可能にするため）
-                    btn.innerText = "Save";
-                    btn.disabled = false;
-                }, 1200);
-
-            } catch (e) {
-                alert("Error!");
-                btn.innerText = "Save";
-                btn.disabled = false;
-            }
+                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
+                setTimeout(async () => { await loadData(); closeModal(); }, 1200);
+            } catch (e) { alert("Error!"); btn.innerText = "Save"; btn.disabled = false; }
         }
-
         loadData();
     </script>
 </body>
