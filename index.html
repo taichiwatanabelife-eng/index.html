@@ -6,7 +6,7 @@
     <title>WORLDCUP 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .flag-icon { width: 20px; height: 14px; object-fit: cover; margin-right: 6px; border: 1px solid #ddd; }
+        .flag-icon { width: 18px; height: 12px; object-fit: cover; margin-right: 4px; border: 1px solid #ddd; flex-shrink: 0; }
         .tab-content { display: none; padding-bottom: 100px; }
         .active { display: block; }
         
@@ -14,27 +14,31 @@
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; justify-content: space-around; padding: 15px; z-index: 50; }
         .nav-item { color: white; text-align: center; font-size: 16px; font-weight: bold; flex: 1; }
 
-        /* Result用：横並びレイアウト（Team, Player, Win, Draw, Lose, Result） */
-        .res-grid { 
-            display: grid; 
-            grid-template-cols: 2.5fr 1.5fr 1fr 1fr 1fr 1.8fr; 
-            gap: 4px; 
-            align-items: center; 
-            text-align: center;
-            font-size: 12px;
-        }
-        .grid-header { background: #f8fafc; color: #475569; font-weight: bold; padding: 10px 8px; border-bottom: 2px solid #e2e8f0; }
-        .grid-row { background: white; padding: 14px 8px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
-        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; overflow: hidden; }
-
-        /* Player用：横並びレイアウト（Team, Result, Points） */
-        .ply-grid {
+        /* --- Resultシート用の横並びグリッド設定 --- */
+        /* 列構成: Team(1.5), Player(1), Win(0.7), Draw(0.7), Lose(0.7), Result(1.2), Edit(0.3) */
+        .res-grid-container {
             display: grid;
-            grid-template-cols: 3fr 3fr 2fr;
-            gap: 8px;
+            grid-template-cols: 1.5fr 1fr 0.7fr 0.7fr 0.7fr 1.2fr 0.3fr;
+            gap: 2px;
             align-items: center;
-            padding: 10px 12px;
+            text-align: center;
+            font-size: 11px; /* スマホで収まるように小さめ */
         }
+        .grid-header { background: #f1f5f9; color: #475569; font-weight: bold; padding: 10px 4px; border-bottom: 2px solid #cbd5e1; }
+        .grid-row { background: white; padding: 12px 4px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
+        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; overflow: hidden; white-space: nowrap; }
+        .player-cell { text-align: left; color: #64748b; overflow: hidden; white-space: nowrap; }
+
+        /* --- Playerシート用の横並びグリッド設定 --- */
+        .ply-grid-container {
+            display: grid;
+            grid-template-cols: 1.5fr 1.5fr 1fr;
+            gap: 10px;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .ply-header { background: #f8fafc; font-size: 11px; font-weight: bold; color: #64748b; border-bottom: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -58,14 +62,14 @@
     <!-- 編集モーダル -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[100]">
         <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
-            <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-blue-900 text-center">Edit Team Stats</h2>
+            <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-blue-900 text-center">数値を入力</h2>
             <div class="space-y-4">
-                <div class="flex justify-between items-center"><label class="font-bold">Win</label><input type="number" id="edit-win" class="border-2 rounded-lg w-24 p-2 text-center text-lg"></div>
-                <div class="flex justify-between items-center"><label class="font-bold">Draw</label><input type="number" id="edit-draw" class="border-2 rounded-lg w-24 p-2 text-center text-lg"></div>
-                <div class="flex justify-between items-center"><label class="font-bold">Lose</label><input type="number" id="edit-lose" class="border-2 rounded-lg w-24 p-2 text-center text-lg"></div>
-                <div class="flex flex-col gap-2">
+                <div class="flex justify-between items-center"><label class="font-bold">Win</label><input type="number" id="edit-win" class="border-2 rounded-lg w-24 p-2 text-center"></div>
+                <div class="flex justify-between items-center"><label class="font-bold">Draw</label><input type="number" id="edit-draw" class="border-2 rounded-lg w-24 p-2 text-center"></div>
+                <div class="flex justify-between items-center"><label class="font-bold">Lose</label><input type="number" id="edit-lose" class="border-2 rounded-lg w-24 p-2 text-center"></div>
+                <div class="flex flex-col gap-1">
                     <label class="font-bold">Result</label>
-                    <select id="edit-result-status" class="border-2 rounded-lg w-full p-3 bg-gray-50">
+                    <select id="edit-result-status" class="border-2 rounded-lg w-full p-2 bg-gray-50">
                         <option value="GS敗退">GS敗退</option>
                         <option value="Best 16">Best 16</option>
                         <option value="Best 8">Best 8</option>
@@ -74,8 +78,8 @@
                         <option value="優勝">優勝</option>
                     </select>
                 </div>
-                <div class="pt-6 flex gap-3">
-                    <button onclick="submitUpdate()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition-transform">Save</button>
+                <div class="pt-4 flex gap-2">
+                    <button onclick="submitUpdate()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">Save</button>
                     <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-bold">Cancel</button>
                 </div>
             </div>
@@ -86,9 +90,7 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxjOJLiIpiE58ivDd472FYPD6A7uYWdPs0iN4-PSIHj7VujnyH-2LwbRrzjiuuuyc0/exec";
 
         const flagMap = {
-            "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", 
-            "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma",
-            "イタリア": "it", "クロアチア": "hr", "アメリカ": "us", "メキシコ": "mx"
+            "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma"
         };
 
         let currentData = null;
@@ -99,36 +101,42 @@
                 currentData = await res.json();
                 renderResult(currentData.result);
                 renderPlayers(currentData.players);
-            } catch (e) { console.error("Load Error:", e); }
+            } catch (e) { console.error(e); }
         }
 
         function renderResult(data) {
             const container = document.getElementById('result-list');
             const groups = data.reduce((acc, row) => {
-                const g = row.Group || "-";
-                if (!acc[g]) acc[g] = [];
-                acc[g].push(row);
+                if (!acc[row.Group]) acc[row.Group] = [];
+                acc[row.Group].push(row);
                 return acc;
             }, {});
 
             container.innerHTML = Object.keys(groups).sort().map(groupName => `
-                <div class="mb-6 bg-white shadow-sm overflow-hidden">
-                    <div class="bg-blue-900 text-white p-3 px-4 font-bold">Group ${groupName}</div>
-                    <!-- ヘッダー：Team, Playerの文字を消し、Win, Draw, Lose, Resultを配置 -->
-                    <div class="res-grid grid-header">
-                        <div></div><div></div><div>Win</div><div>Draw</div><div>Lose</div><div>Result</div>
+                <div class="mb-4 bg-white shadow-sm overflow-x-auto">
+                    <div class="bg-blue-900 text-white p-2 px-4 font-bold text-sm">Group ${groupName}</div>
+                    <!-- ヘッダー項目：Win, Draw, Loseをフルスペルで横並び -->
+                    <div class="res-grid-container grid-header">
+                        <div class="text-left pl-2">Team</div>
+                        <div class="text-left">Player</div>
+                        <div>Win</div>
+                        <div>Draw</div>
+                        <div>Lose</div>
+                        <div>Result</div>
+                        <div></div>
                     </div>
                     ${groups[groupName].map(row => `
-                        <div class="res-grid grid-row" onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
-                            <div class="team-cell">
+                        <div class="res-grid-container grid-row" onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
+                            <div class="team-cell pl-2">
                                 <img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">
-                                <span class="truncate">${row.Team}</span>
+                                <span>${row.Team}</span>
                             </div>
-                            <div class="text-gray-400 truncate text-left">${row.Player || '-'}</div>
-                            <div class="font-medium">${row.Win || 0}</div>
-                            <div class="font-medium">${row.Draw || 0}</div>
-                            <div class="font-medium">${row.Lose || 0}</div>
+                            <div class="player-cell">${row.Player || '-'}</div>
+                            <div>${row.Win || 0}</div>
+                            <div>${row.Draw || 0}</div>
+                            <div>${row.Lose || 0}</div>
                             <div class="text-blue-600 font-bold">${row.Result || '-'}</div>
+                            <div class="text-gray-300 text-[10px]">✎</div>
                         </div>
                     `).join('')}
                 </div>
@@ -145,26 +153,25 @@
             }, {});
 
             container.innerHTML = Object.entries(players).map(([name, info]) => `
-                <div class="mb-6 bg-white shadow-md rounded-lg overflow-hidden mx-2 mt-4">
+                <div class="mb-6 bg-white shadow mx-2 mt-4 rounded-lg overflow-hidden">
                     <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
-                        <span class="text-xl font-black">${name}</span>
+                        <span class="text-lg font-bold">${name}</span>
                         <div class="text-right">
-                            <span class="text-[10px] block uppercase text-gray-400">Total Points</span>
-                            <span class="text-2xl font-black text-yellow-400">${info.total}</span>
+                            <span class="text-[10px] block text-gray-400">Total Points</span>
+                            <span class="text-2xl font-bold text-yellow-400">${info.total}</span>
                         </div>
                     </div>
-                    <!-- Playerヘッダー：横並び -->
-                    <div class="ply-grid bg-gray-50 text-[11px] font-bold text-gray-500 border-b">
+                    <div class="ply-grid-container ply-header">
                         <div>Team</div><div>Result</div><div class="text-right">Points</div>
                     </div>
                     ${info.teams.map(t => `
-                        <div class="ply-grid border-b last:border-0 text-sm">
-                            <div class="flex items-center font-bold">
+                        <div class="ply-grid-container">
+                            <div class="flex items-center font-bold text-sm">
                                 <img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">
                                 <span>${t.Team}</span>
                             </div>
-                            <div class="text-gray-600">${t.Result || '-'}</div>
-                            <div class="font-black text-right text-blue-700">${t.Points || 0} pt</div>
+                            <div class="text-gray-600 text-xs">${t.Result || '-'}</div>
+                            <div class="font-bold text-right text-blue-600">${t.Points || 0} pt</div>
                         </div>
                     `).join('')}
                 </div>
@@ -176,6 +183,7 @@
             document.getElementById(tabId).classList.add('active');
         }
 
+        // --- 編集機能の仕組み ---
         let editingTeam = "";
         function openModal(team, win, draw, lose, status) {
             editingTeam = team;
@@ -203,24 +211,14 @@
             btn.disabled = true;
 
             try {
-                // GASへの送信
-                await fetch(API_URL, {
-                    method: "POST",
-                    mode: 'no-cors',
-                    body: JSON.stringify(payload)
-                });
-
-                // 反映まで少し待って再読込
+                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
                 setTimeout(() => {
                     closeModal();
                     loadData();
                     btn.innerText = "Save";
                     btn.disabled = false;
-                }, 1500);
-            } catch (e) {
-                alert("Error saving data");
-                btn.disabled = false;
-            }
+                }, 1200);
+            } catch (e) { alert("Error"); btn.disabled = false; }
         }
 
         loadData();
