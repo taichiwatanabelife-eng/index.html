@@ -82,7 +82,7 @@
 
     <script>
         // 【重要】ご自身のGAS URLに書き換えてください
-        const API_URL = "https://script.google.com/macros/s/AKfycbyOBpjHnZbOJA-ai1L10tEi2zmUkRuwaBE33QwsQepxwKRbY62QelmH0p6fDle6ro5Y/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbyK5V7biv4_Bx6t1zR7ja-KF6YJFxxr8dZVtAWt9ITUpoeeQlK1GbWANvWIlP8LQOlv/exec";
 
         const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "カナダ": "ca" };
 
@@ -199,8 +199,9 @@
 
         async function submitUpdate() {
             const btn = document.getElementById('save-btn');
+            // チーム名の前後の空白を確実に除去して送信
             const payload = {
-                team: editingTeam,
+                team: editingTeam.trim(), 
                 win: parseInt(document.getElementById('edit-win').value) || 0,
                 draw: parseInt(document.getElementById('edit-draw').value) || 0,
                 lose: parseInt(document.getElementById('edit-lose').value) || 0,
@@ -221,6 +222,9 @@
                 setTimeout(async () => {
                     await loadData();
                     closeModal();
+                    // モーダルを閉じた後にボタンを復活（何度でも編集可能にするため）
+                    btn.innerText = "Save";
+                    btn.disabled = false;
                 }, 1200);
 
             } catch (e) {
