@@ -7,53 +7,54 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .flag-icon { width: 20px; height: 14px; object-fit: cover; margin-right: 4px; border: 1px solid #ddd; }
-        .tab-content { display: none; padding-bottom: 80px; }
+        /* 下部メニューのための余白 */
+        .tab-content { display: none; padding-bottom: 100px; }
         .active { display: block; }
-        /* 下部メニュー用のスタイル */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; justify-content: space-around; padding: 12px; z-index: 50; }
-        .nav-item { color: white; text-align: center; font-size: 14px; font-weight: bold; flex: 1; }
-        /* マトリクス表示の調整 */
-        .grid-header { display: grid; grid-template-cols: 3fr 1.5fr 1fr 1fr 1fr 2fr; gap: 4px; font-size: 10px; color: #666; font-weight: bold; padding: 4px 8px; border-bottom: 1px solid #eee; }
-        .grid-row { display: grid; grid-template-cols: 3fr 1.5fr 1fr 1fr 1fr 2fr; gap: 4px; align-items: center; padding: 10px 8px; border-bottom: 1px solid #f0f0f0; background: white; font-size: 13px; }
+        
+        /* 下部ナビゲーション */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; justify-content: space-around; padding: 15px; z-index: 50; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .nav-item { color: white; text-align: center; font-size: 16px; font-weight: bold; flex: 1; }
+        .nav-item:active { opacity: 0.6; }
+
+        /* マトリクス表示用レイアウト */
+        .grid-header { display: grid; grid-template-cols: 2.5fr 1.5fr 0.8fr 0.8fr 0.8fr 1.8fr; gap: 2px; font-size: 10px; color: #666; font-weight: bold; padding: 8px; border-bottom: 1px solid #eee; background: #f9f9f9; text-align: center; }
+        .grid-row { display: grid; grid-template-cols: 2.5fr 1.5fr 0.8fr 0.8fr 0.8fr 1.8fr; gap: 2px; align-items: center; padding: 12px 8px; border-bottom: 1px solid #f0f0f0; background: white; font-size: 13px; text-align: center; }
+        .team-col { text-align: left; display: flex; align-items: center; font-weight: bold; }
+
+        /* Playerシート用レイアウト */
+        .player-grid-header { display: grid; grid-template-cols: 3fr 3fr 2fr; gap: 4px; font-size: 11px; color: #666; padding: 8px; border-bottom: 1px solid #eee; background: #f9f9f9; }
+        .player-grid-row { display: grid; grid-template-cols: 3fr 3fr 2fr; gap: 4px; align-items: center; padding: 12px 8px; border-bottom: 1px solid #f0f0f0; background: white; font-size: 13px; }
     </style>
 </head>
 <body class="bg-gray-50">
 
-    <!-- メインコンテンツ -->
+    <!-- Resultタブ -->
     <div id="result-tab" class="tab-content active">
         <div id="result-list">読み込み中...</div>
     </div>
 
+    <!-- Playerタブ -->
     <div id="player-tab" class="tab-content">
         <div id="player-list">読み込み中...</div>
     </div>
 
     <!-- 下部メニュー -->
-    <nav class="bottom-nav shadow-2xl">
+    <nav class="bottom-nav">
         <button onclick="showTab('result-tab')" class="nav-item">Result</button>
-        <button onclick="showTab('player-tab')" class="nav-item border-l border-blue-800">Player</button>
+        <div class="w-px bg-blue-700 my-1"></div>
+        <button onclick="showTab('player-tab')" class="nav-item">Player</button>
     </nav>
 
-    <!-- 更新モーダル (Result用) -->
+    <!-- 更新モーダル -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100]">
         <div class="bg-white p-6 rounded-xl w-full max-w-sm shadow-2xl">
-            <h2 id="modal-team-name" class="text-xl font-bold mb-4 text-blue-900 text-center">Update Status</h2>
+            <h2 id="modal-team-name" class="text-xl font-bold mb-4 text-blue-900 text-center">Edit Result</h2>
             <div class="space-y-4">
-                <div class="flex justify-between items-center gap-2">
-                    <label class="text-sm font-bold w-16">Win</label>
-                    <input type="number" id="edit-win" class="border rounded w-full p-2 text-center bg-gray-50">
-                </div>
-                <div class="flex justify-between items-center gap-2">
-                    <label class="text-sm font-bold w-16">Draw</label>
-                    <input type="number" id="edit-draw" class="border rounded w-full p-2 text-center bg-gray-50">
-                </div>
-                <div class="flex justify-between items-center gap-2">
-                    <label class="text-sm font-bold w-16">Lose</label>
-                    <input type="number" id="edit-lose" class="border rounded w-full p-2 text-center bg-gray-50">
-                </div>
-                <div class="flex justify-between items-center gap-2">
-                    <label class="text-sm font-bold w-16">Result</label>
-                    <select id="edit-result-status" class="border rounded w-full p-2 bg-gray-50">
+                <div class="flex justify-between items-center"><label class="font-bold">Win</label><input type="number" id="edit-win" class="border rounded w-24 p-2 text-center"></div>
+                <div class="flex justify-between items-center"><label class="font-bold">Draw</label><input type="number" id="edit-draw" class="border rounded w-24 p-2 text-center"></div>
+                <div class="flex justify-between items-center"><label class="font-bold">Lose</label><input type="number" id="edit-lose" class="border rounded w-24 p-2 text-center"></div>
+                <div class="flex justify-between items-center"><label class="font-bold">Result</label>
+                    <select id="edit-result-status" class="border rounded w-40 p-2">
                         <option value="GS敗退">GS敗退</option>
                         <option value="Best 16">Best 16</option>
                         <option value="Best 8">Best 8</option>
@@ -63,8 +64,8 @@
                     </select>
                 </div>
                 <div class="pt-4 flex gap-2">
-                    <button onclick="submitUpdate()" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold shadow-md hover:bg-blue-700">Save</button>
-                    <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300">Cancel</button>
+                    <button onclick="submitUpdate()" id="save-btn" class="flex-1 bg-blue-600 text-white py-3 rounded-lg font-bold">Save</button>
+                    <button onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-bold">Cancel</button>
                 </div>
             </div>
         </div>
@@ -87,10 +88,7 @@
                 currentData = await res.json();
                 renderResult(currentData.result);
                 renderPlayers(currentData.players);
-            } catch (e) {
-                console.error(e);
-                alert("データの読み込みに失敗しました。");
-            }
+            } catch (e) { console.error(e); }
         }
 
         function renderResult(data) {
@@ -102,24 +100,22 @@
             }, {});
 
             container.innerHTML = Object.keys(groups).sort().map(groupName => `
-                <div class="mb-6 bg-white">
-                    <div class="bg-blue-900 text-white p-2 font-bold flex justify-between px-4">
-                        <span>Group ${groupName}</span>
-                    </div>
+                <div class="mb-4 bg-white shadow-sm">
+                    <div class="bg-blue-900 text-white p-2 px-4 font-bold">Group ${groupName}</div>
                     <div class="grid-header">
-                        <div>Team</div><div>Player</div><div>W</div><div>D</div><div>L</div><div>Result</div>
+                        <div class="text-left">Team</div><div>Player</div><div>W</div><div>D</div><div>L</div><div>Result</div>
                     </div>
                     ${groups[groupName].map(row => `
                         <div class="grid-row" onclick="openModal('${row.Team}', ${row.Win}, ${row.Draw}, ${row.Lose}, '${row.Result}')">
-                            <div class="flex items-center font-bold">
+                            <div class="team-col">
                                 <img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">
                                 <span class="truncate">${row.Team}</span>
                             </div>
                             <div class="text-gray-500 truncate text-[11px]">${row.Player || '-'}</div>
-                            <div class="text-center">${row.Win}</div>
-                            <div class="text-center">${row.Draw}</div>
-                            <div class="text-center">${row.Lose}</div>
-                            <div class="text-blue-600 font-bold text-center text-[11px]">${row.Result}</div>
+                            <div>${row.Win}</div>
+                            <div>${row.Draw}</div>
+                            <div>${row.Lose}</div>
+                            <div class="text-blue-600 font-bold text-[11px]">${row.Result || '-'}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -136,21 +132,81 @@
             }, {});
 
             container.innerHTML = Object.entries(players).map(([name, info]) => `
-                <div class="mb-6 bg-white shadow-sm overflow-hidden">
+                <div class="mb-6 bg-white shadow-sm">
                     <div class="bg-gray-800 text-white p-3 flex justify-between items-center px-4">
                         <span class="text-lg font-bold">${name}</span>
                         <div class="text-right">
-                            <span class="text-xs block text-gray-400">Total Points</span>
+                            <span class="text-[10px] block text-gray-400">Total Points</span>
                             <span class="text-xl font-bold text-yellow-400">${info.total}</span>
                         </div>
                     </div>
-                    <div class="grid-header bg-gray-50">
-                        <div>Team</div><div>Result</div><div>Points</div><div></div><div></div><div></div>
+                    <div class="player-grid-header">
+                        <div>Team</div><div>Result</div><div>Points</div>
                     </div>
                     ${info.teams.map(t => `
-                        <div class="grid-row" style="grid-template-cols: 3fr 3fr 2fr;">
-                            <div class="flex items-center">
+                        <div class="player-grid-row">
+                            <div class="team-col">
                                 <img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">
                                 <span>${t.Team}</span>
                             </div>
-                            <div class="text-gray-600">${t.Result || '-'}</div>
+                            <div class="text-gray-600 text-[12px]">${t.Result || '-'}</div>
+                            <div class="font-bold text-right pr-4 text-blue-600">${t.Points || 0} pt</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        let editingTeam = "";
+        function openModal(team, win, draw, lose, status) {
+            editingTeam = team;
+            document.getElementById('modal-team-name').innerText = team;
+            document.getElementById('edit-win').value = win;
+            document.getElementById('edit-draw').value = draw;
+            document.getElementById('edit-lose').value = lose;
+            document.getElementById('edit-result-status').value = status;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        async function submitUpdate() {
+            const btn = document.getElementById('save-btn');
+            const payload = {
+                team: editingTeam,
+                win: parseInt(document.getElementById('edit-win').value) || 0,
+                draw: parseInt(document.getElementById('edit-draw').value) || 0,
+                lose: parseInt(document.getElementById('edit-lose').value) || 0,
+                resultStatus: document.getElementById('edit-result-status').value
+            };
+
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
+                });
+                setTimeout(() => {
+                    closeModal();
+                    loadData();
+                    btn.innerText = "Save";
+                    btn.disabled = false;
+                }, 1200);
+            } catch (e) {
+                alert("保存に失敗しました");
+                btn.disabled = false;
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
