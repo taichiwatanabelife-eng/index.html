@@ -9,8 +9,8 @@
         body { font-family: -apple-system, sans-serif; background: #f4f7f9; }
         .tab-content { display: none; padding-bottom: 100px; }
         .active { display: block; }
-        .row-container { display: flex; align-items: center; width: 100%; background: white; border-bottom: 1px solid #edf2f7; padding: 12px 4px; white-space: nowrap; font-size: 11px; }
-        .header-row { background: #f8fafc; font-weight: bold; color: #64748b; font-size: 10px; }
+        .row-container { display: flex; align-items: center; width: 100%; background: white; border-bottom: 1px solid #edf2f7; padding: 12px 4px; white-space: nowrap; font-size: 11px; cursor: pointer; }
+        .header-row { background: #f8fafc; font-weight: bold; color: #64748b; font-size: 10px; cursor: default; }
         .col-team   { width: 105px; display: flex; align-items: center; font-weight: 800; overflow: hidden; padding-left: 4px; }
         .col-player { width: 70px;  color: #94a3b8; overflow: hidden; text-overflow: ellipsis; }
         .col-val    { width: 32px;  text-align: center; font-weight: bold; }
@@ -28,21 +28,21 @@
 
     <nav class="bottom-nav">
         <button onclick="showTab('result-tab')" class="nav-item">Result</button>
-        <button onclick="showTab('player-tab')" class="nav-item border-l border-blue-800">Player</button>
+        <button onclick="showTab('player-tab')" class="nav-item border-l border-blue-700">Player</button>
     </nav>
 
     <!-- 編集モーダル -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[100]">
         <div class="bg-white p-6 rounded-2xl w-full max-sm shadow-2xl">
             <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-blue-900 text-center">Update</h2>
-            <div class="space-y-4">
+            <div class="space-y-4 text-sm">
                 <div class="flex justify-between items-center"><label class="font-bold">Win</label><input type="number" id="edit-win" class="border-2 rounded-lg w-24 p-2 text-center text-lg font-bold bg-gray-50"></div>
                 <div class="flex justify-between items-center"><label class="font-bold">Draw</label><input type="number" id="edit-draw" class="border-2 rounded-lg w-24 p-2 text-center text-lg font-bold bg-gray-50"></div>
                 <div class="flex justify-between items-center"><label class="font-bold">Lose</label><input type="number" id="edit-lose" class="border-2 rounded-lg w-24 p-2 text-center text-lg font-bold bg-gray-50"></div>
                 <div class="flex flex-col gap-1">
                     <label class="font-bold">Result</label>
                     <select id="edit-result-status" class="border-2 rounded-lg w-full p-3 bg-gray-50 font-bold">
-                        <option value="-">-</option>
+                        <option value="-"></option>
                         <option value="GS敗退">GS敗退</option>
                         <option value="ベスト32">ベスト32</option>
                         <option value="ベスト16">ベスト16</option>
@@ -67,36 +67,44 @@
 
         const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca" };
 
-        let currentData = null;
+        let resultData = [];
 
         async function loadData() {
             try {
                 const res = await fetch(API_URL);
-                currentData = await res.json();
-                renderResult(currentData.result);
-                renderPlayers(currentData.players);
+                const data = await res.json();
+                resultData = data.result; // グローバルに保存
+                renderResult(resultData);
+                renderPlayers(data.players);
             } catch (e) { console.error(e); }
         }
 
         function renderResult(data) {
             const container = document.getElementById('result-list');
-            const groups = data.reduce((acc, row) => {
+            container.innerHTML = ""; 
+
+            const groups = data.reduce((acc, row, index) => {
                 const g = row.Group || "-";
                 if (!acc[g]) acc[g] = [];
-                acc[g].push(row);
+                // 行データにインデックスを付けて保存
+                acc[g].push({ ...row, originalIndex: index });
                 return acc;
             }, {});
 
-            container.innerHTML = Object.keys(groups).sort().map(groupName => `
-                <div class="mb-4">
-                    <div class="bg-blue-900 text-white p-2 px-4 font-bold text-[10px]">GROUP ${groupName}</div>
-                    <div class="row-container header-row">
-                        <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">WIN</div><div class="col-val">DRAW</div><div class="col-val">LOSE</div><div class="col-result">RESULT</div><div class="col-edit"></div>
-                    </div>
-                    ${groups[groupName].map(row => `
-                        <div class="row-container" onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || '-'}')">
+            Object.keys(groups).sort().forEach(groupName => {
+                let groupHtml = `
+                    <div class="mb-4">
+                        <div class="bg-blue-900 text-white p-2 px-4 font-bold text-[10px]">GROUP ${groupName}</div>
+                        <div class="row-container header-row">
+                            <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">WIN</div><div class="col-val">DRAW</div><div class="col-val">LOSE</div><div class="col-result">RESULT</div><div class="col-edit"></div>
+                        </div>`;
+                
+                groups[groupName].forEach(row => {
+                    const cleanTeam = row.Team.toString().toLowerCase().trim();
+                    groupHtml += `
+                        <div class="row-container" onclick="prepareEdit(${row.originalIndex})">
                             <div class="col-team">
-                                <img src="https://flagcdn.com/w40/${flagMap[row.Team.toString().toLowerCase().trim()] || 'un'}.png" class="flag-icon">
+                                <img src="https://flagcdn.com/w40/${flagMap[cleanTeam] || 'un'}.png" class="flag-icon">
                                 <span class="truncate">${row.Team}</span>
                             </div>
                             <div class="col-player truncate">${row.Player || '-'}</div>
@@ -105,10 +113,11 @@
                             <div class="col-val">${row.Lose || 0}</div>
                             <div class="col-result truncate">${row.Result || '-'}</div>
                             <div class="col-edit text-[10px]">✎</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
+                        </div>`;
+                });
+                groupHtml += `</div>`;
+                container.innerHTML += groupHtml;
+            });
         }
 
         function renderPlayers(data) {
@@ -146,14 +155,17 @@
             document.getElementById(tabId).classList.add('active');
         }
 
-        let editingTeam = "";
-        function openModal(team, win, draw, lose, status) {
-            editingTeam = team;
-            document.getElementById('modal-team-name').innerText = team;
-            document.getElementById('edit-win').value = win;
-            document.getElementById('edit-draw').value = draw;
-            document.getElementById('edit-lose').value = lose;
-            document.getElementById('edit-result-status').value = status;
+        // --- 修正の要：データ番号でモーダルを開く ---
+        let editingTeamName = "";
+        function prepareEdit(index) {
+            const row = resultData[index];
+            editingTeamName = row.Team;
+            document.getElementById('modal-team-name').innerText = row.Team;
+            document.getElementById('edit-win').value = row.Win || 0;
+            document.getElementById('edit-draw').value = row.Draw || 0;
+            document.getElementById('edit-lose').value = row.Lose || 0;
+            document.getElementById('edit-result-status').value = row.Result || "-";
+            
             document.getElementById('edit-modal').classList.remove('hidden');
             const btn = document.getElementById('save-btn');
             btn.innerText = "Save"; btn.disabled = false;
@@ -164,7 +176,7 @@
         async function submitUpdate() {
             const btn = document.getElementById('save-btn');
             const payload = {
-                team: editingTeam,
+                team: editingTeamName,
                 win: parseInt(document.getElementById('edit-win').value) || 0,
                 draw: parseInt(document.getElementById('edit-draw').value) || 0,
                 lose: parseInt(document.getElementById('edit-lose').value) || 0,
