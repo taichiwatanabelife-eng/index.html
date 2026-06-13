@@ -14,31 +14,38 @@
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; justify-content: space-around; padding: 15px; z-index: 50; }
         .nav-item { color: white; text-align: center; font-size: 16px; font-weight: bold; flex: 1; }
 
-        /* --- Resultシート用の横並びグリッド設定 --- */
-        /* 列構成: Team(1.5), Player(1), Win(0.7), Draw(0.7), Lose(0.7), Result(1.2), Edit(0.3) */
-        .res-grid-container {
+        /* --- 横並びを強制する設定 --- */
+        .scroll-container { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        
+        /* Resultシート用：1行を最低 500px の幅に固定して横並びを死守 */
+        .res-grid-row {
             display: grid;
-            grid-template-cols: 1.5fr 1fr 0.7fr 0.7fr 0.7fr 1.2fr 0.3fr;
-            gap: 2px;
+            grid-template-cols: 140px 100px 60px 60px 60px 100px 30px;
+            min-width: 550px;
             align-items: center;
             text-align: center;
-            font-size: 11px; /* スマホで収まるように小さめ */
+            font-size: 12px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 0;
         }
-        .grid-header { background: #f1f5f9; color: #475569; font-weight: bold; padding: 10px 4px; border-bottom: 2px solid #cbd5e1; }
-        .grid-row { background: white; padding: 12px 4px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
-        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; overflow: hidden; white-space: nowrap; }
-        .player-cell { text-align: left; color: #64748b; overflow: hidden; white-space: nowrap; }
+        .grid-header { background: #f1f5f9; font-weight: bold; color: #475569; position: sticky; top: 0; }
 
-        /* --- Playerシート用の横並びグリッド設定 --- */
-        .ply-grid-container {
+        /* Playerシート用：最低 350px の幅で横並び */
+        .ply-grid-row {
             display: grid;
-            grid-template-cols: 1.5fr 1.5fr 1fr;
-            gap: 10px;
+            grid-template-cols: 140px 120px 80px;
+            min-width: 340px;
             align-items: center;
-            padding: 12px 15px;
+            padding: 12px 10px;
+            background: white;
             border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
         }
-        .ply-header { background: #f8fafc; font-size: 11px; font-weight: bold; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+        .ply-header { background: #f8fafc; font-weight: bold; color: #64748b; font-size: 11px; }
+
+        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; padding-left: 10px; }
+        .player-cell { text-align: left; color: #64748b; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -71,6 +78,7 @@
                     <label class="font-bold">Result</label>
                     <select id="edit-result-status" class="border-2 rounded-lg w-full p-2 bg-gray-50">
                         <option value="GS敗退">GS敗退</option>
+                        <option value="Best 32">Best 32</option>
                         <option value="Best 16">Best 16</option>
                         <option value="Best 8">Best 8</option>
                         <option value="準決勝">準決勝</option>
@@ -90,7 +98,8 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxjOJLiIpiE58ivDd472FYPD6A7uYWdPs0iN4-PSIHj7VujnyH-2LwbRrzjiuuuyc0/exec";
 
         const flagMap = {
-            "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma"
+            "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma",
+            "アメリカ": "us", "メキシコ": "mx", "カナダ": "ca", "イタリア": "it"
         };
 
         let currentData = null;
@@ -113,115 +122,16 @@
             }, {});
 
             container.innerHTML = Object.keys(groups).sort().map(groupName => `
-                <div class="mb-4 bg-white shadow-sm overflow-x-auto">
+                <div class="mb-4 bg-white shadow-sm">
                     <div class="bg-blue-900 text-white p-2 px-4 font-bold text-sm">Group ${groupName}</div>
-                    <!-- ヘッダー項目：Win, Draw, Loseをフルスペルで横並び -->
-                    <div class="res-grid-container grid-header">
-                        <div class="text-left pl-2">Team</div>
-                        <div class="text-left">Player</div>
-                        <div>Win</div>
-                        <div>Draw</div>
-                        <div>Lose</div>
-                        <div>Result</div>
-                        <div></div>
-                    </div>
-                    ${groups[groupName].map(row => `
-                        <div class="res-grid-container grid-row" onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
-                            <div class="team-cell pl-2">
-                                <img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">
-                                <span>${row.Team}</span>
-                            </div>
-                            <div class="player-cell">${row.Player || '-'}</div>
-                            <div>${row.Win || 0}</div>
-                            <div>${row.Draw || 0}</div>
-                            <div>${row.Lose || 0}</div>
-                            <div class="text-blue-600 font-bold">${row.Result || '-'}</div>
-                            <div class="text-gray-300 text-[10px]">✎</div>
+                    <div class="scroll-container">
+                        <div class="res-grid-row grid-header">
+                            <div class="text-left pl-[10px]">Team</div>
+                            <div class="text-left">Player</div>
+                            <div>Win</div>
+                            <div>Draw</div>
+                            <div>Lose</div>
+                            <div>Result</div>
+                            <div></div>
                         </div>
-                    `).join('')}
-                </div>
-            `).join('');
-        }
-
-        function renderPlayers(data) {
-            const container = document.getElementById('player-list');
-            const players = data.reduce((acc, row) => {
-                const p = row.Player || "Unknown";
-                if (!acc[p]) acc[p] = { teams: [], total: row["Total Points"] || 0 };
-                acc[p].teams.push(row);
-                return acc;
-            }, {});
-
-            container.innerHTML = Object.entries(players).map(([name, info]) => `
-                <div class="mb-6 bg-white shadow mx-2 mt-4 rounded-lg overflow-hidden">
-                    <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
-                        <span class="text-lg font-bold">${name}</span>
-                        <div class="text-right">
-                            <span class="text-[10px] block text-gray-400">Total Points</span>
-                            <span class="text-2xl font-bold text-yellow-400">${info.total}</span>
-                        </div>
-                    </div>
-                    <div class="ply-grid-container ply-header">
-                        <div>Team</div><div>Result</div><div class="text-right">Points</div>
-                    </div>
-                    ${info.teams.map(t => `
-                        <div class="ply-grid-container">
-                            <div class="flex items-center font-bold text-sm">
-                                <img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">
-                                <span>${t.Team}</span>
-                            </div>
-                            <div class="text-gray-600 text-xs">${t.Result || '-'}</div>
-                            <div class="font-bold text-right text-blue-600">${t.Points || 0} pt</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
-        }
-
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-        }
-
-        // --- 編集機能の仕組み ---
-        let editingTeam = "";
-        function openModal(team, win, draw, lose, status) {
-            editingTeam = team;
-            document.getElementById('modal-team-name').innerText = team;
-            document.getElementById('edit-win').value = win;
-            document.getElementById('edit-draw').value = draw;
-            document.getElementById('edit-lose').value = lose;
-            document.getElementById('edit-result-status').value = status;
-            document.getElementById('edit-modal').classList.remove('hidden');
-        }
-
-        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-
-        async function submitUpdate() {
-            const btn = document.getElementById('save-btn');
-            const payload = {
-                team: editingTeam,
-                win: parseInt(document.getElementById('edit-win').value) || 0,
-                draw: parseInt(document.getElementById('edit-draw').value) || 0,
-                lose: parseInt(document.getElementById('edit-lose').value) || 0,
-                resultStatus: document.getElementById('edit-result-status').value
-            };
-
-            btn.innerText = "Saving...";
-            btn.disabled = true;
-
-            try {
-                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
-                setTimeout(() => {
-                    closeModal();
-                    loadData();
-                    btn.innerText = "Save";
-                    btn.disabled = false;
-                }, 1200);
-            } catch (e) { alert("Error"); btn.disabled = false; }
-        }
-
-        loadData();
-    </script>
-</body>
-</html>
+                        ${groups[groupName].map(row => `
