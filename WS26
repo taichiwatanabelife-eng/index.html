@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>W杯ポイント管理アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .flag-icon { width: 24px; height: 16px; object-fit: cover; margin-right: 8px; border: 1px solid #eee; }
+        .tab-content { display: none; }
+        .active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-100 pb-20">
+
+    <nav class="bg-blue-900 text-white p-4 sticky top-0 z-10 shadow-lg">
+        <h1 class="text-xl font-bold text-center">World Cup Tracker</h1>
+        <div class="flex justify-around mt-2">
+            <button onclick="showTab('result-tab')" class="px-4 py-1 rounded hover:bg-blue-700">試合結果</button>
+            <button onclick="showTab('player-tab')" class="px-4 py-1 rounded hover:bg-blue-700">プレイヤー</button>
+        </div>
+    </nav>
+
+    <div id="result-tab" class="tab-content active p-4">
+        <div id="result-list">読み込み中...</div>
+    </div>
+
+    <div id="player-tab" class="tab-content p-4">
+        <div id="player-list">読み込み中...</div>
+    </div>
+
+    <!-- 更新モーダル -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-lg w-full max-w-sm">
+            <h2 id="modal-team-name" class="text-xl font-bold mb-4">更新</h2>
+            <div class="space-y-3">
+                <label class="block">Win: <input type="number" id="edit-win" class="border w-full p-2"></label>
+                <label class="block">Draw: <input type="number" id="edit-draw" class="border w-full p-2"></label>
+                <label class="block">Lose: <input type="number" id="edit-lose" class="border w-full p-2"></label>
+                <label class="block">Result: 
+                    <select id="edit-result-status" class="border w-full p-2">
+                        <option value="GS敗退">GS敗退</option>
+                        <option value="Best 16">Best 16</option>
+                        <option value="Best 8">Best 8</option>
+                        <option value="準決勝">準決勝</option>
+                        <option value="準優勝">準優勝</option>
+                        <option value="優勝">優勝</option>
+                    </select>
+                </label>
+                <button onclick="submitUpdate()" class="w-full bg-blue-600 text-white py-2 rounded">保存</button>
+                <button onclick="closeModal()" class="w-full bg-gray-300 py-2 rounded">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "ここにGASのURLを貼り付ける";
+
+        // 国名から国旗コードへの変換用マップ（必要に応じて追加）
+        const flagMap = {
+            "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", 
+            "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma"
+        };
+
+        let currentData = null;
+
+        async function loadData() {
+            const res = await fetch(API_URL);
+            currentData = await res.json();
+            renderResult(currentData.result);
+            renderPlayers(currentData.players);
+        }
+
+        function renderResult(data) {
+            const container = document.getElementById('result-list');
+            // Groupごとにグループ化
+            const groups = data.reduce((acc, row) => {
+                if (!acc[row.Group]) acc[row.Group] = [];
+                acc[row.Group].push(row);
+                return acc;
+            }, {});
+
+            container.innerHTML = Object.keys(groups).sort().map(groupName => `
+                <div class="mb-6">
+                    <h2 class="bg-blue-100 p-2 font-bold border-b-2 border-blue-300">Group ${groupName}</h2>
+                    ${groups[groupName].map(row => `
+                        <div class="flex justify-between items-center bg-white p-3 border-b hover:bg-gray-50" onclick="openModal('${row.Team}', ${row.Win}, ${row.Draw}, ${row.Lose}, '${row.Result}')">
+                            <div class="flex items-center">
+                                <img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">
+                                <span>${row.Team}</span>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                ${row.Win}勝 ${row.Draw}分 ${row.Lose}負 | <span class="font-semibold text-blue-600">${row.Result}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function renderPlayers(data) {
+            const container = document.getElementById('player-list');
+            // Playerごとにグループ化
+            const players = data.reduce((acc, row) => {
+                if (!acc[row.Player]) acc[row.Player] = { teams: [], total: 0 };
+                acc[row.Player].teams.push(row);
+                acc[row.Player].total += Number(row.Points || 0); // スプレッドシート側の合計列
+                return acc;
+            }, {});
+
+            container.innerHTML = Object.entries(players).map(([name, info]) => `
+                <div class="mb-8 bg-white rounded-lg shadow">
+                    <div class="bg-gray-800 text-white p-3 rounded-t-lg flex justify-between">
+                        <span class="font-bold">${name}</span>
+                        <span class="font-bold text-yellow-400">${info.total} pt</span>
+                    </div>
+                    ${info.teams.map(t => `
+                        <div class="flex justify-between p-3 border-b text-sm">
+                            <div class="flex items-center">
+                                <img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">
+                                <span>${t.Team}</span>
+                            </div>
+                            <span>${t.Result} (${t.Points}pt)</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // モーダル操作
+        let editingTeam = "";
+        function openModal(team, win, draw, lose, status) {
+            editingTeam = team;
+            document.getElementById('modal-team-name').innerText = team;
+            document.getElementById('edit-win').value = win;
+            document.getElementById('edit-draw').value = draw;
+            document.getElementById('edit-lose').value = lose;
+            document.getElementById('edit-result-status').value = status;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        }
+
+        async function submitUpdate() {
+            const payload = {
+                team: editingTeam,
+                win: document.getElementById('edit-win').value,
+                draw: document.getElementById('edit-draw').value,
+                lose: document.getElementById('edit-lose').value,
+                resultStatus: document.getElementById('edit-result-status').value
+            };
+
+            await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            closeModal();
+            loadData(); // 再読み込み
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
