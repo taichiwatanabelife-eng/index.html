@@ -6,29 +6,20 @@
     <title>WORLDCUP 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* ダークテーマの基本設定 */
         body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #ffffff; }
         .tab-content { display: none; padding-bottom: 120px; }
         .active-content { display: block; }
-        
-        /* 表のデザイン（ダーク） */
         .row-container { display: flex; align-items: center; width: 100%; background: #171717; border-bottom: 1px solid #262626; padding: 14px 4px; white-space: nowrap; font-size: 11px; cursor: pointer; }
         .header-row { background: #262626; font-weight: bold; color: #a3a3a3; font-size: 10px; cursor: default; position: sticky; top: 0; z-index: 10; }
-        
-        /* 列の幅固定 */
         .col-team   { width: 105px; display: flex; align-items: center; font-weight: 800; overflow: hidden; padding-left: 4px; }
         .col-player { width: 70px;  color: #737373; overflow: hidden; text-overflow: ellipsis; }
         .col-val    { width: 32px;  text-align: center; font-weight: bold; }
         .col-result { width: 85px;  text-align: center; font-weight: 900; color: #3b82f6; }
         .col-edit   { width: 25px;  text-align: center; color: #404040; }
         .flag-icon { width: 18px; height: 12px; margin-right: 6px; border: 1px solid #404040; flex-shrink: 0; }
-
-        /* ナビゲーション */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; padding: 12px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
         .nav-item { color: #a3a3a3; text-align: center; font-size: 14px; font-weight: bold; flex: 1; padding: 10px; border-radius: 8px; transition: all 0.2s; }
         .nav-item.active-tab { background: #ffffff; color: #000000; }
-
-        /* モーダル */
         .modal-bg { background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); }
         .modal-content { background: #171717; border: 1px solid #262626; }
         input, select { background: #262626 !important; border: 1px solid #404040 !important; color: white !important; }
@@ -75,7 +66,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxKY1FwrajSsVmJIMI3fSQomSDp6oFyIciQ4uEPHWhn6MTxZld062u5FcNkJsOdSD9Q/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzVfs2qKZW7er46MpXs_j8Af9UnaBY1H75b_w6f-E-XDJ-rsgOPpm6C597IjGuPNu3I/exec";
 
         const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca" };
 
@@ -102,27 +93,25 @@
             }, {});
 
             Object.keys(groups).sort().forEach(groupName => {
-                let groupHtml = `
-                    <div class="mb-4">
-                        <div class="bg-neutral-800 text-neutral-400 p-2 px-4 font-bold text-[10px] tracking-widest">GROUP ${groupName}</div>
-                        <div class="row-container header-row">
-                            <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">WIN</div><div class="col-val">DRAW</div><div class="col-val">LOSE</div><div class="col-result">RESULT</div><div class="col-edit"></div>
-                        </div>`;
+                let groupHtml = `<div class="mb-4">
+                    <div class="bg-neutral-800 text-neutral-400 p-2 px-4 font-bold text-[10px] tracking-widest">GROUP ${groupName}</div>
+                    <div class="row-container header-row">
+                        <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">WIN</div><div class="col-val">DRAW</div><div class="col-val">LOSE</div><div class="col-result">RESULT</div><div class="col-edit"></div>
+                    </div>`;
                 groups[groupName].forEach(row => {
                     const cleanTeam = row.Team.toString().toLowerCase().trim();
-                    groupHtml += `
-                        <div class="row-container" onclick="prepareEdit(${row.originalIndex})">
-                            <div class="col-team">
-                                <img src="https://flagcdn.com/w40/${flagMap[cleanTeam] || 'un'}.png" class="flag-icon">
-                                <span class="truncate">${row.Team}</span>
-                            </div>
-                            <div class="col-player truncate">${row.Player || '-'}</div>
-                            <div class="col-val">${row.Win || 0}</div>
-                            <div class="col-val">${row.Draw || 0}</div>
-                            <div class="col-val">${row.Lose || 0}</div>
-                            <div class="col-result truncate">${row.Result || '-'}</div>
-                            <div class="col-edit text-[10px]">✎</div>
-                        </div>`;
+                    groupHtml += `<div class="row-container" onclick="prepareEdit(${row.originalIndex})">
+                        <div class="col-team">
+                            <img src="https://flagcdn.com/w40/${flagMap[cleanTeam] || 'un'}.png" class="flag-icon">
+                            <span class="truncate">${row.Team}</span>
+                        </div>
+                        <div class="col-player truncate">${row.Player || '-'}</div>
+                        <div class="col-val">${row.Win || 0}</div>
+                        <div class="col-val">${row.Draw || 0}</div>
+                        <div class="col-val">${row.Lose || 0}</div>
+                        <div class="col-result truncate">${row.Result || '-'}</div>
+                        <div class="col-edit text-[10px]">✎</div>
+                    </div>`;
                 });
                 container.innerHTML += groupHtml + `</div>`;
             });
@@ -152,16 +141,13 @@
                             </div>
                             <div class="flex-1 text-center text-neutral-400 text-xs">${t.Result || '-'}</div>
                             <div class="flex-1 text-right font-bold text-blue-500">${t.Points || 0} pt</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
+                        </div>`).join('')}
+                </div>`).join('');
         }
 
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-content'));
             document.getElementById(tabId).classList.add('active-content');
-            
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-tab'));
             if(tabId === 'result-tab') document.getElementById('btn-result').classList.add('active-tab');
             else document.getElementById('btn-player').classList.add('active-tab');
@@ -193,15 +179,25 @@
                 resultStatus: document.getElementById('edit-result-status').value
             };
             btn.innerText = "Saving..."; btn.disabled = true;
+
             try {
-                // 送信
-                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
-                // 反映の安定性を高めるために待ち時間を2秒に延長
-                setTimeout(async () => { 
-                    await loadData(); 
-                    closeModal(); 
-                }, 2000);
-            } catch (e) { alert("Error!"); btn.innerText = "Save"; btn.disabled = false; }
+                // ここが重要：送信方式を text/plain にして CORS を回避しつつ確実に送る
+                await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'text/plain' }
+                });
+
+                // 反映を待つ（3秒）
+                setTimeout(async () => {
+                    await loadData();
+                    closeModal();
+                }, 3000);
+            } catch (e) {
+                console.error(e);
+                alert("送信に失敗しました。GASの設定を確認してください。");
+                btn.innerText = "Save"; btn.disabled = false;
+            }
         }
         loadData();
     </script>
