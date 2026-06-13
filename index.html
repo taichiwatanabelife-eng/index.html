@@ -6,14 +6,12 @@
     <title>WORLDCUP 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 横並びを絶対に維持するための設定 */
         .scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; }
-        table { min-width: 600px; border-collapse: collapse; width: 100%; table-layout: fixed; }
+        table { min-width: 650px; border-collapse: collapse; width: 100%; table-layout: fixed; }
         th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: bold; position: sticky; top: 0; }
-        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; width: 140px; }
-        .flag-icon { width: 20px; height: 14px; object-fit: cover; margin-right: 6px; border: 1px solid #ddd; }
-        
+        th { background: #f8fafc; color: #64748b; font-weight: bold; }
+        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; width: 150px; white-space: nowrap; }
+        .flag-icon { width: 20px; height: 14px; object-fit: cover; margin-right: 6px; border: 1px solid #ddd; flex-shrink: 0; }
         .tab-content { display: none; padding-bottom: 100px; }
         .active { display: block; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; justify-content: space-around; padding: 15px; z-index: 50; }
@@ -23,11 +21,11 @@
 <body class="bg-gray-100">
 
     <div id="result-tab" class="tab-content active">
-        <div id="result-list">読み込み中...</div>
+        <div id="result-list"><div class="p-10 text-center">読み込み中...</div></div>
     </div>
 
     <div id="player-tab" class="tab-content">
-        <div id="player-list">読み込み中...</div>
+        <div id="player-list"><div class="p-10 text-center">読み込み中...</div></div>
     </div>
 
     <nav class="bottom-nav">
@@ -70,33 +68,43 @@
 
         async function loadData() {
             try {
-                // 読み込み中表示を出す
-                document.getElementById('result-list').innerHTML = '<div class="p-10 text-center">読み込み中...</div>';
                 const res = await fetch(API_URL);
                 const currentData = await res.json();
+                
+                if (!currentData.result || !currentData.players) {
+                    throw new Error("スプレッドシートのデータ構造が壊れています。");
+                }
+                
                 renderResult(currentData.result);
                 renderPlayers(currentData.players);
             } catch (e) {
-                document.getElementById('result-list').innerHTML = '<div class="p-10 text-center text-red-500">読み込みに失敗しました。再起動してください。</div>';
+                console.error(e);
+                document.getElementById('result-list').innerHTML = `
+                    <div class="p-10 text-center">
+                        <p class="text-red-500 font-bold">エラーが発生しました</p>
+                        <p class="text-xs text-gray-500 mt-2">${e.message}</p>
+                        <button onclick="loadData()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">再試行</button>
+                    </div>`;
             }
         }
 
         function renderResult(data) {
             const container = document.getElementById('result-list');
             const groups = data.reduce((acc, row) => {
-                if (!acc[row.Group]) acc[row.Group] = [];
-                acc[row.Group].push(row);
+                const g = row.Group || "Unknown";
+                if (!acc[g]) acc[g] = [];
+                acc[g].push(row);
                 return acc;
             }, {});
 
             container.innerHTML = Object.keys(groups).sort().map(groupName => `
                 <div class="mb-6 bg-white shadow-sm">
-                    <div class="bg-blue-900 text-white p-2 px-4 font-bold">Group ${groupName}</div>
+                    <div class="bg-blue-900 text-white p-2 px-4 font-bold text-sm text-left">Group ${groupName}</div>
                     <div class="scroll-wrapper">
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width:150px; text-align:left; padding-left:10px;">Team</th>
+                                    <th style="width:160px; text-align:left; padding-left:10px;">Team</th>
                                     <th style="width:100px; text-align:left;">Player</th>
                                     <th style="width:60px;">Win</th>
                                     <th style="width:60px;">Draw</th>
@@ -108,7 +116,7 @@
                             <tbody>
                                 ${groups[groupName].map(row => `
                                     <tr onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
-                                        <td><div class="team-cell" style="padding-left:2px;"><img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">${row.Team}</div></td>
+                                        <td><div class="team-cell"><img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">${row.Team || '不明'}</div></td>
                                         <td style="text-align:left; color:#666;">${row.Player || '-'}</td>
                                         <td>${row.Win || 0}</td>
                                         <td>${row.Draw || 0}</td>
@@ -128,7 +136,9 @@
             const container = document.getElementById('player-list');
             const players = data.reduce((acc, row) => {
                 const p = row.Player || "Unknown";
-                if (!acc[p]) acc[p] = { teams: [], total: row["Total Points"] || 0 };
+                // Total Points または TotalPoints という名前で探す
+                const total = row["Total Points"] || row["TotalPoints"] || 0;
+                if (!acc[p]) acc[p] = { teams: [], total: total };
                 acc[p].teams.push(row);
                 return acc;
             }, {});
@@ -138,7 +148,7 @@
                     <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
                         <span class="text-lg font-bold">${name}</span>
                         <div class="text-right">
-                            <span class="text-[10px] block text-gray-400">Total Points</span>
+                            <span class="text-[10px] block text-gray-400 uppercase">Total Points</span>
                             <span class="text-2xl font-bold text-yellow-400">${info.total}</span>
                         </div>
                     </div>
@@ -146,16 +156,16 @@
                         <table style="min-width:350px;">
                             <thead>
                                 <tr>
-                                    <th style="text-align:left; padding-left:15px;">Team</th>
-                                    <th style="text-align:left;">Result</th>
+                                    <th style="text-align:left; padding-left:15px; width:150px;">Team</th>
+                                    <th style="text-align:left; width:120px;">Result</th>
                                     <th style="text-align:right; padding-right:15px;">Points</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${info.teams.map(t => `
                                     <tr>
-                                        <td><div class="team-cell" style="padding-left:7px;"><img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">${t.Team}</div></td>
-                                        <td style="text-align:left; color:#666;">${t.Result || '-'}</td>
+                                        <td><div class="team-cell" style="padding-left:7px;"><img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">${t.Team || '不明'}</div></td>
+                                        <td style="text-align:left; color:#666; font-size:11px;">${t.Result || '-'}</td>
                                         <td style="text-align:right; padding-right:15px;" class="font-bold text-blue-600">${t.Points || 0} pt</td>
                                     </tr>
                                 `).join('')}
@@ -196,18 +206,15 @@
             btn.innerText = "Saving...";
             btn.disabled = true;
             try {
-                // 保存処理
                 await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
-                
-                // 完了後、少し待ってからモーダルを閉じ、データを再取得
-                setTimeout(async () => {
+                setTimeout(() => {
                     closeModal();
                     btn.innerText = "Save";
                     btn.disabled = false;
-                    await loadData(); // ここで最新データを読み込み直す
-                }, 1500);
+                    loadData(); 
+                }, 1200);
             } catch (e) {
-                alert("Error: 保存に失敗しました。");
+                alert("保存エラー");
                 btn.disabled = false;
                 btn.innerText = "Save";
             }
