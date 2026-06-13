@@ -6,13 +6,18 @@
     <title>WORLDCUP 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; background: white; }
-        table { min-width: 650px; border-collapse: collapse; width: 100%; table-layout: fixed; }
-        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #eee; font-size: 12px; }
-        th { background: #f8fafc; color: #64748b; font-weight: bold; }
-        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; width: 150px; white-space: nowrap; }
-        .flag-icon { width: 20px; height: 14px; object-fit: cover; margin-right: 6px; border: 1px solid #ddd; flex-shrink: 0; }
-        .tab-content { display: none; padding-bottom: 100px; }
+        /* 横並びを絶対に維持するテーブル設定 */
+        .table-container { width: 100%; overflow-x: auto; background: white; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        table { min-width: 650px; border-collapse: collapse; width: 100%; }
+        th, td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        th { background: #f8fafc; color: #64748b; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+        .team-cell { text-align: left; display: flex; align-items: center; font-weight: bold; width: 150px; padding-left: 10px; }
+        .flag-icon { width: 20px; height: 14px; object-fit: cover; margin-right: 8px; border: 1px solid #ddd; flex-shrink: 0; }
+        
+        /* プレイヤー用テーブル設定（横並び） */
+        .player-table { min-width: 350px; }
+
+        .tab-content { display: none; padding-bottom: 100px; padding-left: 10px; padding-right: 10px; }
         .active { display: block; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e3a8a; display: flex; justify-content: space-around; padding: 15px; z-index: 50; }
         .nav-item { color: white; text-align: center; font-size: 16px; font-weight: bold; flex: 1; }
@@ -20,12 +25,12 @@
 </head>
 <body class="bg-gray-100">
 
-    <div id="result-tab" class="tab-content active">
-        <div id="result-list"><div class="p-10 text-center">読み込み中...</div></div>
+    <div id="result-tab" class="tab-content active mt-4">
+        <div id="result-list">読み込み中...</div>
     </div>
 
-    <div id="player-tab" class="tab-content">
-        <div id="player-list"><div class="p-10 text-center">読み込み中...</div></div>
+    <div id="player-tab" class="tab-content mt-4">
+        <div id="player-list">読み込み中...</div>
     </div>
 
     <nav class="bottom-nav">
@@ -36,7 +41,7 @@
     <!-- 編集モーダル -->
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[100]">
         <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl">
-            <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-blue-900 text-center">数値を入力</h2>
+            <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-blue-900 text-center">Update Stats</h2>
             <div class="space-y-4">
                 <div class="flex justify-between items-center"><label class="font-bold">Win</label><input type="number" id="edit-win" class="border-2 rounded-lg w-24 p-2 text-center"></div>
                 <div class="flex justify-between items-center"><label class="font-bold">Draw</label><input type="number" id="edit-draw" class="border-2 rounded-lg w-24 p-2 text-center"></div>
@@ -62,67 +67,56 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbywOOE3x02rBBKyxZ2ZVfFmA5aeJ27-q24sgVHRZ4OZDtz1KVATJBs1vxGJTznQFWqr/exec";
+        // 【重要】ここに新しいGASのURLを貼り付けてください
+        const API_URL = "https://script.google.com/macros/s/AKfycbyOBpjHnZbOJA-ai1L10tEi2zmUkRuwaBE33QwsQepxwKRbY62QelmH0p6fDle6ro5Y/exec";
 
-        const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "アメリカ": "us", "メキシコ": "mx", "カナダ": "ca", "イタリア": "it" };
+        const flagMap = { "日本": "jp", "アルゼンチン": "ar", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "ブラジル": "br", "イングランド": "gb", "モロッコ": "ma", "イタリア": "it", "アメリカ": "us", "メキシコ": "mx", "カナダ": "ca" };
 
         async function loadData() {
             try {
                 const res = await fetch(API_URL);
                 const currentData = await res.json();
-                
-                if (!currentData.result || !currentData.players) {
-                    throw new Error("スプレッドシートのデータ構造が壊れています。");
-                }
-                
                 renderResult(currentData.result);
                 renderPlayers(currentData.players);
             } catch (e) {
-                console.error(e);
-                document.getElementById('result-list').innerHTML = `
-                    <div class="p-10 text-center">
-                        <p class="text-red-500 font-bold">エラーが発生しました</p>
-                        <p class="text-xs text-gray-500 mt-2">${e.message}</p>
-                        <button onclick="loadData()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded">再試行</button>
-                    </div>`;
+                document.getElementById('result-list').innerHTML = `<p class="p-10 text-center text-red-500">読み込みエラー: ${e.message}</p>`;
             }
         }
 
         function renderResult(data) {
             const container = document.getElementById('result-list');
             const groups = data.reduce((acc, row) => {
-                const g = row.Group || "Unknown";
-                if (!acc[g]) acc[g] = [];
-                acc[g].push(row);
+                if (!acc[row.Group]) acc[row.Group] = [];
+                acc[row.Group].push(row);
                 return acc;
             }, {});
 
             container.innerHTML = Object.keys(groups).sort().map(groupName => `
-                <div class="mb-6 bg-white shadow-sm">
-                    <div class="bg-blue-900 text-white p-2 px-4 font-bold text-sm text-left">Group ${groupName}</div>
-                    <div class="scroll-wrapper">
+                <div class="mb-6 bg-white rounded-lg shadow-sm">
+                    <div class="bg-blue-900 text-white p-3 px-4 font-bold rounded-t-lg">Group ${groupName}</div>
+                    <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width:160px; text-align:left; padding-left:10px;">Team</th>
-                                    <th style="width:100px; text-align:left;">Player</th>
-                                    <th style="width:60px;">Win</th>
-                                    <th style="width:60px;">Draw</th>
-                                    <th style="width:60px;">Lose</th>
-                                    <th style="width:100px;">Result</th>
-                                    <th style="width:40px;"></th>
+                                    <th style="text-align:left; padding-left:15px;">Team</th>
+                                    <th style="text-align:left;">Player</th>
+                                    <th>Win</th>
+                                    <th>Draw</th>
+                                    <th>Lose</th>
+                                    <th>Result</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${groups[groupName].map(row => `
                                     <tr onclick="openModal('${row.Team}', ${row.Win || 0}, ${row.Draw || 0}, ${row.Lose || 0}, '${row.Result || 'GS敗退'}')">
-                                        <td><div class="team-cell"><img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">${row.Team || '不明'}</div></td>
-                                        <td style="text-align:left; color:#666;">${row.Player || '-'}</td>
+                                        <td><div class="team-cell"><img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon">${row.Team}</div></td>
+                                        <td style="text-align:left; color:#64748b;">${row.Player || '-'}</td>
                                         <td>${row.Win || 0}</td>
                                         <td>${row.Draw || 0}</td>
                                         <td>${row.Lose || 0}</td>
                                         <td class="font-bold text-blue-600">${row.Result || '-'}</td>
-                                        <td style="color:#ccc;">✎</td>
+                                        <td style="color:#cbd5e1;">✎</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -136,7 +130,6 @@
             const container = document.getElementById('player-list');
             const players = data.reduce((acc, row) => {
                 const p = row.Player || "Unknown";
-                // Total Points または TotalPoints という名前で探す
                 const total = row["Total Points"] || row["TotalPoints"] || 0;
                 if (!acc[p]) acc[p] = { teams: [], total: total };
                 acc[p].teams.push(row);
@@ -144,28 +137,28 @@
             }, {});
 
             container.innerHTML = Object.entries(players).map(([name, info]) => `
-                <div class="mb-6 bg-white shadow mx-2 mt-4 rounded-lg overflow-hidden">
+                <div class="mb-8 bg-white shadow-md rounded-lg overflow-hidden">
                     <div class="bg-gray-800 text-white p-4 flex justify-between items-center">
-                        <span class="text-lg font-bold">${name}</span>
+                        <span class="text-xl font-bold">${name}</span>
                         <div class="text-right">
                             <span class="text-[10px] block text-gray-400 uppercase">Total Points</span>
                             <span class="text-2xl font-bold text-yellow-400">${info.total}</span>
                         </div>
                     </div>
-                    <div class="scroll-wrapper">
-                        <table style="min-width:350px;">
+                    <div class="table-container">
+                        <table class="player-table">
                             <thead>
                                 <tr>
-                                    <th style="text-align:left; padding-left:15px; width:150px;">Team</th>
-                                    <th style="text-align:left; width:120px;">Result</th>
+                                    <th style="text-align:left; padding-left:15px;">Team</th>
+                                    <th style="text-align:left;">Result</th>
                                     <th style="text-align:right; padding-right:15px;">Points</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${info.teams.map(t => `
                                     <tr>
-                                        <td><div class="team-cell" style="padding-left:7px;"><img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">${t.Team || '不明'}</div></td>
-                                        <td style="text-align:left; color:#666; font-size:11px;">${t.Result || '-'}</td>
+                                        <td><div class="team-cell"><img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">${t.Team}</div></td>
+                                        <td style="text-align:left; color:#64748b;">${t.Result || '-'}</td>
                                         <td style="text-align:right; padding-right:15px;" class="font-bold text-blue-600">${t.Points || 0} pt</td>
                                     </tr>
                                 `).join('')}
@@ -212,11 +205,10 @@
                     btn.innerText = "Save";
                     btn.disabled = false;
                     loadData(); 
-                }, 1200);
+                }, 1500);
             } catch (e) {
-                alert("保存エラー");
+                alert("Error saving data");
                 btn.disabled = false;
-                btn.innerText = "Save";
             }
         }
         loadData();
