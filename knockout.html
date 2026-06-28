@@ -6,31 +6,26 @@
     <title>WC2026 Bracket</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #000000; color: #ffffff; }
-        .tab-btn { transition: all 0.2s; }
+        body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #ffffff; }
         .tab-btn.active { color: #ffffff; font-weight: 900; border-bottom: 3px solid #fbbf24; }
         
-        /* 担当者別カラー（えび・がっち・たいち） */
+        /* 担当者別カラーバー */
         .owner-ebi { border-left: 4px solid #ef4444 !important; }
         .owner-gatchi { border-left: 4px solid #3b82f6 !important; }
         .owner-taichi { border-left: 4px solid #10b981 !important; }
-        .owner-none { border-left: 4px solid #262626 !important; }
+        .owner-none { border-left: 4px solid #404040 !important; }
 
-        .match-card { background: #111111; border: 1px solid #262626; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
-        .winner-row { background: #1c1c1c !important; }
+        .match-card { background: #171717; border: 1px solid #262626; border-radius: 10px; margin-bottom: 12px; }
+        .winner-row { background: #262626 !important; }
         .winner-row .team-name { color: #fbbf24; font-weight: 900; }
-        .flag-icon { width: 22px; height: 15px; object-fit: cover; border: 1px solid #333; flex-shrink: 0; }
-        
-        /* 読み込み中アニメーション */
-        .loading-spinner { width: 24px; height: 24px; border: 3px solid #333; border-top: 3px solid #fbbf24; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .flag-icon { width: 20px; height: 14px; object-fit: cover; border: 1px solid #333; flex-shrink: 0; }
     </style>
 </head>
-<body class="pb-24">
+<body class="pb-20">
 
     <!-- ナビゲーション -->
-    <div class="sticky top-0 bg-black/90 backdrop-blur-md z-50 border-b border-neutral-800">
-        <div class="flex justify-around text-neutral-500 text-[10px] font-black uppercase p-1">
+    <div class="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-md z-50 border-b border-neutral-800">
+        <div class="flex justify-around text-neutral-500 text-[10px] font-bold uppercase p-1">
             <button onclick="showRound(32)" id="tab32" class="tab-btn active px-3 py-3">R32</button>
             <button onclick="showRound(16)" id="tab16" class="tab-btn px-3 py-3">R16</button>
             <button onclick="showRound(8)" id="tab8" class="tab-btn px-3 py-3">QF</button>
@@ -39,73 +34,71 @@
         </div>
     </div>
 
-    <!-- メイン表示 -->
-    <div id="tournament-container" class="p-4 space-y-2">
-        <div class="flex flex-col items-center justify-center p-20 space-y-4">
-            <div class="loading-spinner"></div>
-            <div class="text-neutral-500 text-xs font-bold tracking-widest">LOADING BRACKET...</div>
-        </div>
+    <!-- コンテンツ -->
+    <div id="tournament-container" class="p-3 space-y-4">
+        <div class="text-center p-10 text-neutral-500">データを読み込み中...</div>
     </div>
 
     <script>
-        // 提供された最新のGAS URL
         const API_URL = "https://script.google.com/macros/s/AKfycbyt06eNvKzHmxQkx8mDW1VRIMcES6wpXulpRbc5LaTsAZb2sMpaLAS9uQqmgB5_jIY_/exec";
 
-        const flagMap = { "日本": "jp", "韓国": "kr", "中国": "cn", "オーストラリア": "au", "サウジアラビア": "sa", "イラン": "ir", "カタール": "qa", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "アルゼンチン": "ar", "ブラジル": "br", "ウルグアイ": "uy", "コロンビア": "co", "モロッコ": "ma", "セネガル": "sn", "ハイチ": "ht", "キュラソー": "cw", "カーボベルデ": "cv", "コンゴ": "cg", "ボスニア・ヘルツェゴヴィナ": "ba", "チェコ": "cz", "南アフリカ": "za" };
+        // 国名→国旗コード
+        const flagMap = { "日本": "jp", "韓国": "kr", "中国": "cn", "オーストラリア": "au", "サウジアラビア": "sa", "イラン": "ir", "カタール": "qa", "イラク": "iq", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "スイス": "ch", "デンマーク": "dk", "ポーランド": "pl", "ベルギー": "be", "トルコ": "tr", "ウクライナ": "ua", "チェコ": "cz", "ボスニア・ヘルツェゴヴィナ": "ba", "スコットランド": "gb-sct", "ウェールズ": "gb-wls", "ブラジル": "br", "アルゼンチン": "ar", "ウルグアイ": "uy", "コロンビア": "co", "エクアドル": "ec", "ペルー": "pe", "チリ": "cl", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "コスタリカ": "cr", "パナマ": "pa", "ジャマイカ": "jm", "ハイチ": "ht", "キュラソー": "cw", "モロッコ": "ma", "セネガル": "sn", "チュニジア": "tn", "カメルーン": "cm", "ガーナ": "gh", "エジプト": "eg", "ナイジェリア": "ng", "アルジェリア": "dz", "南アフリカ": "za", "カーボベルデ": "cv", "コンゴ": "cg", "ニュージーランド": "nz" };
 
         const ownerColors = { "えび": "owner-ebi", "がっち": "owner-gatchi", "たいち": "owner-taichi" };
 
-        // 2026年大会の公式トーナメント配置 (スロット順)
-        const bracketTemplate = [
-            ["3A", "3C"], ["1B", "2C"], ["1C", "3A"], ["1A", "2B"], // 左山1
-            ["1D", "3B"], ["2A", "2D"], ["1E", "3D"], ["1F", "2E"], // 左山2
-            ["1G", "3E"], ["2F", "2G"], ["1H", "3F"], ["1I", "2H"], // 右山1
-            ["1J", "3G"], ["2I", "2J"], ["1K", "3H"], ["1L", "2K"]  // 右山2
+        // 2026 FIFA公式ブラケット配置（順不同ではなく、公式の対戦番号 Match 49〜80 に準拠）
+        // スプレッドシートにある「国名」をここに入れるだけで自動配置されます
+        const bracketOrder = [
+            "南アフリカ", "カナダ",           // Match 49
+            "オランダ", "モロッコ",     // Match 50
+            "ドイツ", "パラグアイ",             // Match 51
+            "フランス", "スウェーデン",         // Match 52
+            "ベルギー", "セネガル",     // Match 53
+            "アメリカ", "ボスニア・ヘルツェゴヴィナ",           // Match 54
+            "スペイン", "オーストリア",         // Match 55
+            "ポルトガル", "クロアチア",       // Match 56
+            "ブラジル", "日本",       // Match 57
+            "コートジボワール", "ノルウェー",     // Match 58
+            "メキシコ", "エクアドル",         // Match 59
+            "イングランド", "コンゴ",       // Match 60
+            "スイス", "アルジェリア",         // Match 61
+            "コロンビア", "ガーナ",     // Match 62
+            "オーストラリア", "エジプト",   // Match 63
+            "アルゼンチン", "カーボベルデ"      // Match 64
         ];
 
-        let tournament = { 
-            32: [], 
-            16: Array(8).fill(null).map(()=>({teams:[null,null], winner:null})), 
-            8: Array(4).fill(null).map(()=>({teams:[null,null], winner:null})), 
-            4: Array(2).fill(null).map(()=>({teams:[null,null], winner:null})), 
-            2: Array(1).fill(null).map(()=>({teams:[null,null], winner:null})) 
-        };
-        
+        let tournament = { 32: [], 16: Array(8).fill(null).map((_,i)=>({teams:[null,null]})), 8: Array(4).fill(null).map((_,i)=>({teams:[null,null]})), 4: Array(2).fill(null).map((_,i)=>({teams:[null,null]})), 2: Array(1).fill(null).map((_,i)=>({teams:[null,null]})) };
         let currentRound = 32;
 
         async function init() {
             try {
-                // 強制的にキャッシュを無視してフェッチ
-                const res = await fetch(API_URL, { cache: "no-store" });
+                const res = await fetch(API_URL);
                 const data = await res.json();
-                const playersData = data.result;
+                const playersData = data.result; // スプレッドシートの全データ
 
-                // スプレッドシートから「ベスト32」の国だけを抽出
-                const b32Teams = playersData.filter(d => d.Result === "ベスト32");
-
-                // ブラケットの構築 (32か国を順番にペアリング)
+                // ブラケット配置の作成
                 tournament[32] = [];
                 for (let i = 0; i < 16; i++) {
-                    const t1 = b32Teams[i * 2];
-                    const t2 = b32Teams[i * 2 + 1];
-                    
+                    const t1Name = bracketOrder[i * 2];
+                    const t2Name = bracketOrder[i * 2 + 1];
+
+                    // スプレッドシートから担当者情報を探す
+                    const t1Info = playersData.find(d => d.Team.trim() === t1Name);
+                    const t2Info = playersData.find(d => d.Team.trim() === t2Name);
+
                     tournament[32].push({
                         winner: null,
                         teams: [
-                            t1 ? { name: t1.Team, owner: t1.Player.trim(), flag: flagMap[t1.Team.trim()] || "un" } : null,
-                            t2 ? { name: t2.Team, owner: t2.Player.trim(), flag: flagMap[t2.Team.trim()] || "un" } : null
+                            t1Name ? { name: t1Name, owner: t1Info ? t1Info.Player : "??", flag: flagMap[t1Name] || "un" } : null,
+                            t2Name ? { name: t2Name, owner: t2Info ? t2Info.Player : "??", flag: flagMap[t2Name] || "un" } : null
                         ]
                     });
                 }
                 render();
             } catch (e) {
-                console.error("Fetch error:", e);
-                document.getElementById('tournament-container').innerHTML = `
-                    <div class="text-center p-10 space-y-4">
-                        <div class="text-red-500 text-xs font-bold">FAILED TO LOAD DATA</div>
-                        <div class="text-neutral-600 text-[10px]">GASのURL設定またはシート名を確認してください</div>
-                        <button onclick="location.reload()" class="bg-neutral-800 px-4 py-2 rounded text-[10px] font-bold">RETRY</button>
-                    </div>`;
+                console.error(e);
+                document.getElementById('tournament-container').innerHTML = `<div class="text-center p-10 text-red-500 text-xs">読み込みに失敗しました。URLとシート名を確認してください。</div>`;
             }
         }
 
@@ -120,7 +113,7 @@
                 const nextMIdx = Math.floor(mIdx / 2);
                 const nextTIdx = mIdx % 2;
                 tournament[nextRound][nextMIdx].teams[nextTIdx] = { ...match.teams[tIdx] };
-                tournament[nextRound][nextMIdx].winner = null; // 次の勝者はリセット
+                tournament[nextRound][nextMIdx].winner = null; // リセット
             }
             render();
         }
@@ -129,39 +122,26 @@
             currentRound = r;
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab' + r).classList.add('active');
-            window.scrollTo(0, 0);
             render();
         }
 
         function render() {
             const container = document.getElementById('tournament-container');
             container.innerHTML = "";
-            
-            if (tournament[currentRound].length === 0) return;
-
             tournament[currentRound].forEach((match, mIdx) => {
-                let html = `
-                    <div class="match-card">
-                        <div class="bg-neutral-900/50 px-3 py-1 text-[8px] font-black text-neutral-600 border-b border-neutral-800/50 uppercase tracking-widest">
-                            MATCH ${mIdx + 1}
-                        </div>`;
-                
+                let html = `<div class="match-card">`;
                 match.teams.forEach((team, tIdx) => {
-                    const ownerClass = team ? (ownerColors[team.owner] || "owner-none") : "owner-none";
+                    const ownerClass = team ? (ownerColors[team.owner.trim()] || "owner-none") : "owner-none";
                     html += `
                         <div onclick="advance(${currentRound}, ${mIdx}, ${tIdx})" 
-                             class="flex items-center justify-between p-4 transition-all duration-300 ${ownerClass} ${match.winner === tIdx ? 'winner-row' : ''}">
+                             class="flex items-center justify-between p-3.5 ${ownerClass} ${match.winner === tIdx ? 'winner-row' : ''}">
                             <div class="flex items-center space-x-3">
-                                <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="flag-icon shadow-sm">
-                                <span class="team-name text-[13px] font-bold tracking-tight ${!team ? 'text-neutral-700 italic' : ''}">
-                                    ${team ? team.name : 'TBD'}
-                                </span>
+                                <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="flag-icon">
+                                <span class="team-name text-[13px] font-bold ${!team ? 'text-neutral-700' : ''}">${team ? team.name : 'TBD'}</span>
                             </div>
-                            <span class="text-[9px] font-black text-neutral-500 uppercase tracking-tighter">
-                                ${team ? team.owner : ''}
-                            </span>
+                            <span class="text-[9px] font-black text-neutral-500 uppercase">${team ? team.owner : ''}</span>
                         </div>
-                        ${tIdx === 0 ? '<div class="h-[1px] bg-neutral-800/30 mx-4"></div>' : ''}
+                        ${tIdx === 0 ? '<div class="h-[1px] bg-neutral-800/40 mx-4"></div>' : ''}
                     `;
                 });
                 html += `</div>`;
