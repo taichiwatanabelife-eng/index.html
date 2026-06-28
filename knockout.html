@@ -3,78 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WC2026 Knockout</title>
+    <title>WC2026 Tournament</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #0a0a0a; color: #ffffff; }
-        .tab-btn.active { border-bottom: 3px solid #ffffff; color: #ffffff; }
-        .owner-ebi { border-left: 4px solid #ef4444; }   /* 赤 */
-        .owner-gatchi { border-left: 4px solid #3b82f6; } /* 青 */
-        .owner-taichi { border-left: 4px solid #10b981; } /* 緑 */
-        .winner { background: #262626 !important; border: 1px solid #ffffff !important; }
-        .winner .team-name { font-weight: 900; color: #fbbf24; }
+        .tab-btn { position: relative; transition: all 0.3s; }
+        .tab-btn.active { color: #ffffff; font-weight: 900; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: 0; left: 20%; width: 60%; height: 3px; background: #fbbf24; border-radius: 2px; }
+        
+        /* 担当者別カラーバー */
+        .owner-ebi { border-left: 4px solid #ef4444 !important; }    /* えび: 赤 */
+        .owner-gatchi { border-left: 4px solid #3b82f6 !important; }  /* がっち: 青 */
+        .owner-taichi { border-left: 4px solid #10b981 !important; }  /* たいち: 緑 */
+        .owner-unknown { border-left: 4px solid #404040 !important; }
+
+        .match-card { background: #171717; border: 1px solid #262626; border-radius: 12px; overflow: hidden; }
+        .winner-row { background: #262626 !important; }
+        .winner-row .team-name { color: #fbbf24; font-weight: 900; }
+        .flag-icon { width: 22px; height: 15px; object-fit: cover; border: 1px solid #333; flex-shrink: 0; }
     </style>
 </head>
-<body class="pb-10">
+<body class="pb-20">
 
-    <!-- ラウンド切り替えタブ -->
-    <div class="sticky top-0 bg-[#0a0a0a] z-50 border-b border-neutral-800">
+    <!-- ラウンド切り替えナビ -->
+    <div class="sticky top-0 bg-[#0a0a0a]/90 backdrop-blur-md z-50 border-b border-neutral-800">
         <div class="flex justify-between text-neutral-500 text-[10px] font-bold uppercase p-2">
-            <button onclick="showRound(32)" id="tab32" class="tab-btn active px-2 py-2">Best 32</button>
-            <button onclick="showRound(16)" id="tab16" class="tab-btn px-2 py-2">Best 16</button>
-            <button onclick="showRound(8)" id="tab8" class="tab-btn px-2 py-2">Best 8</button>
-            <button onclick="showRound(4)" id="tab4" class="tab-btn px-2 py-2">Semi</button>
-            <button onclick="showRound(2)" id="tab2" class="tab-btn px-2 py-2">Final</button>
+            <button onclick="showRound(32)" id="tab32" class="tab-btn active flex-1 py-2 text-center">R32</button>
+            <button onclick="showRound(16)" id="tab16" class="tab-btn flex-1 py-2 text-center">R16</button>
+            <button onclick="showRound(8)" id="tab8" class="tab-btn flex-1 py-2 text-center">QF</button>
+            <button onclick="showRound(4)" id="tab4" class="tab-btn flex-1 py-2 text-center">SF</button>
+            <button onclick="showRound(2)" id="tab2" class="tab-btn flex-1 py-2 text-center">Final</button>
         </div>
     </div>
 
-    <!-- 説明 -->
-    <div class="p-3 text-[10px] text-neutral-400 text-center">
-        勝利チームをタップすると次のラウンドに自動進出します
-    </div>
+    <div id="loader" class="p-20 text-center text-neutral-500 text-sm">データを取得中...</div>
 
-    <!-- トーナメント本体 -->
-    <div id="tournament-container" class="p-4 space-y-4">
-        <!-- JSで対戦カードが生成される -->
+    <div id="tournament-container" class="p-4 space-y-6 hidden">
+        <!-- JSで生成 -->
     </div>
 
     <script>
-        // 初期の32チームデータ（仮）
-        // オーナー: 0=えび, 1=がっち, 2=たいち
-        const players = ["えび", "がっち", "たいち"];
-        const ownerClasses = ["owner-ebi", "owner-gatchi", "owner-taichi"];
+        // 設定
+        const API_URL = "https://script.google.com/macros/s/AKfycbxjOJLiIpiE58ivDd472FYPD6A7uYWdPs0iN4-PSIHj7VujnyH-2LwbRrzjiuuuyc0/exec";
         
+        const ownerMap = { "えび": 0, "がっち": 1, "たいち": 2 };
+        const ownerClasses = ["owner-ebi", "owner-gatchi", "owner-taichi"];
+        const playerNames = ["えび", "がっち", "たいち"];
+
+        const flagMap = {
+            "日本": "jp", "韓国": "kr", "中国": "cn", "オーストラリア": "au", "サウジアラビア": "sa", "イラン": "ir", "カタール": "qa", "イラク": "iq",
+            "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "スイス": "ch", "デンマーク": "dk", "ポーランド": "pl", "ベルギー": "be", "トルコ": "tr", "ウクライナ": "ua", "チェコ": "cz", "ボスニア・ヘルツェゴヴィナ": "ba", "スコットランド": "gb-sct", "ウェールズ": "gb-wls",
+            "ブラジル": "br", "アルゼンチン": "ar", "ウルグアイ": "uy", "コロンビア": "co", "エクアドル": "ec", "ペルー": "pe", "チリ": "cl",
+            "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "コスタリカ": "cr", "パナマ": "pa", "ジャマイカ": "jm", "ハイチ": "ht", "キュラソー": "cw",
+            "モロッコ": "ma", "セネガル": "sn", "チュニジア": "tn", "カメルーン": "cm", "ガーナ": "gh", "エジプト": "eg", "ナイジェリア": "ng", "アルジェリア": "dz", "南アフリカ": "za", "カーボベルデ": "cv", "コンゴ": "cg",
+            "ニュージーランド": "nz"
+        };
+
         let tournament = {
-            32: [
-                { id: 1, teams: [{ name: "アルゼンチン", owner: 0, flag: "ar" }, { name: "日本", owner: 2, flag: "jp" }], winner: null },
-                { id: 2, teams: [{ name: "フランス", owner: 1, flag: "fr" }, { name: "モロッコ", owner: 0, flag: "ma" }], winner: null },
-                { id: 3, teams: [{ name: "スペイン", owner: 2, flag: "es" }, { name: "カナダ", owner: 1, flag: "ca" }], winner: null },
-                { id: 4, teams: [{ name: "ドイツ", owner: 0, flag: "de" }, { name: "ブラジル", owner: 1, flag: "br" }], winner: null },
-                // ... 実際には16カード分作成
-            ],
+            32: [],
             16: Array(8).fill(null).map((_, i) => ({ id: i, teams: [null, null], winner: null })),
             8: Array(4).fill(null).map((_, i) => ({ id: i, teams: [null, null], winner: null })),
             4: Array(2).fill(null).map((_, i) => ({ id: i, teams: [null, null], winner: null })),
             2: Array(1).fill(null).map((_, i) => ({ id: i, teams: [null, null], winner: null }))
         };
 
-        // 32チーム埋めるためのダミーデータ生成
-        for(let i=4; i<16; i++) {
-            tournament[32].push({
-                id: i+1,
-                teams: [
-                    { name: "Team "+(i*2+1), owner: i%3, flag: "un" },
-                    { name: "Team "+(i*2+2), owner: (i+1)%3, flag: "un" }
-                ],
-                winner: null
-            });
-        }
-
         let currentViewRound = 32;
+
+        async function loadTournamentData() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                // 「ベスト32」のチームだけを抽出
+                const b32Teams = data.result.filter(t => t.Result === "ベスト32");
+
+                if (b32Teams.length < 32) {
+                    console.warn("ベスト32のチームが足りません。現在の数: " + b32Teams.length);
+                }
+
+                // 16試合分のペアを作成
+                tournament[32] = [];
+                for (let i = 0; i < 16; i++) {
+                    const team1 = b32Teams[i * 2] || null;
+                    const team2 = b32Teams[i * 2 + 1] || null;
+                    tournament[32].push({
+                        id: i,
+                        teams: [
+                            team1 ? { name: team1.Team, owner: ownerMap[team1.Player.trim()], flag: flagMap[team1.Team.trim()] || "un" } : null,
+                            team2 ? { name: team2.Team, owner: ownerMap[team2.Player.trim()], flag: flagMap[team2.Team.trim()] || "un" } : null
+                        ],
+                        winner: null
+                    });
+                }
+
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('tournament-container').classList.remove('hidden');
+                render();
+            } catch (e) {
+                document.getElementById('loader').innerText = "エラー: データの読み込みに失敗しました。";
+            }
+        }
 
         function showRound(round) {
             currentViewRound = round;
-            // タブの見た目更新
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab' + round).classList.add('active');
             render();
@@ -85,10 +116,9 @@
             const selectedTeam = match.teams[teamIdx];
             if (!selectedTeam) return;
 
-            // 現在のカードに勝者をセット
+            // 勝者をセット
             match.winner = teamIdx;
 
-            // 次のラウンドに進出させるロジック
             const nextRoundMap = { 32: 16, 16: 8, 8: 4, 4: 2 };
             const nextRound = nextRoundMap[round];
 
@@ -96,8 +126,9 @@
                 const nextMatchIdx = Math.floor(matchIdx / 2);
                 const nextTeamSlot = matchIdx % 2;
                 tournament[nextRound][nextMatchIdx].teams[nextTeamSlot] = { ...selectedTeam };
+                // 進出した先の勝者設定はリセット
+                tournament[nextRound][nextMatchIdx].winner = null;
             }
-
             render();
         }
 
@@ -106,33 +137,35 @@
             container.innerHTML = "";
 
             tournament[currentViewRound].forEach((match, mIdx) => {
-                const matchHtml = `
+                const html = `
                     <div class="space-y-1">
-                        <div class="text-[9px] text-neutral-600 font-bold ml-1">MATCH ${mIdx + 1}</div>
-                        <div class="bg-[#171717] rounded-lg overflow-hidden border border-neutral-800">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="text-[9px] text-neutral-600 font-black uppercase tracking-widest">Match ${mIdx + 1}</span>
+                        </div>
+                        <div class="match-card">
                             ${match.teams.map((team, tIdx) => `
                                 <div onclick="advance(${currentViewRound}, ${mIdx}, ${tIdx})" 
-                                     class="flex items-center justify-between p-3 ${team ? ownerClasses[team.owner] : ''} ${match.winner === tIdx ? 'winner' : ''}">
+                                     class="flex items-center justify-between p-3.5 transition-all ${team ? ownerClasses[team.owner] : 'owner-unknown'} ${match.winner === tIdx ? 'winner-row' : ''}">
                                     <div class="flex items-center space-x-3">
-                                        <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="w-5 h-3.5 object-cover opacity-80">
-                                        <span class="team-name text-sm font-bold ${!team ? 'text-neutral-700' : ''}">
-                                            ${team ? team.name : '???'}
+                                        <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="flag-icon">
+                                        <span class="team-name text-sm font-bold ${!team ? 'text-neutral-700 italic' : ''}">
+                                            ${team ? team.name : 'TBD'}
                                         </span>
                                     </div>
-                                    <span class="text-[9px] font-bold text-neutral-500 uppercase tracking-tighter">
-                                        ${team ? players[team.owner] : ''}
+                                    <span class="text-[10px] font-black text-neutral-500 uppercase">
+                                        ${team ? playerNames[team.owner] : ''}
                                     </span>
                                 </div>
-                                ${tIdx === 0 ? '<div class="h-[1px] bg-neutral-800 mx-3"></div>' : ''}
+                                ${tIdx === 0 ? '<div class="h-[1px] bg-neutral-800/50 mx-4"></div>' : ''}
                             `).join('')}
                         </div>
                     </div>
                 `;
-                container.innerHTML += matchHtml;
+                container.innerHTML += html;
             });
         }
 
-        render();
+        loadTournamentData();
     </script>
 </body>
 </html>
