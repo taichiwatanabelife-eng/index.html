@@ -175,4 +175,163 @@
                     const ownerClass = team ? (ownerClasses[team.owner] || "") : "";
                     html += `<div onclick="handleTournamentClick(${round}, ${mIdx}, ${tIdx}, '${team?team.name:''}')" class="flex items-center justify-between p-3.5 transition-all ${ownerClass} ${match.winner === tIdx ? 'winner-row' : ''}">
                         <div class="flex items-center space-x-3 flex-1">
-                            <img src="h
+                            <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="flag-icon">
+                            <span class="team-text text-[13px] font-bold ${!team ? 'text-neutral-800' : ''}">${team ? team.name : 'TBD'}</span>
+                        </div>
+                        <span class="text-[9px] font-black text-neutral-500 uppercase w-10 text-right">${team ? team.owner : ''}</span>
+                    </div>${tIdx === 0 ? '<div class="h-[1px] bg-neutral-800/40 mx-4"></div>' : ''}`;
+                });
+                container.innerHTML += html + `</div>`;
+            });
+        }
+
+        function handleTournamentClick(round, mIdx, tIdx, teamName) {
+            const match = tournament[round][mIdx];
+            if (!match.teams[tIdx]) return;
+
+            if (match.winner === tIdx) {
+                // すでに勝者の場合はキャンセルのみ
+                advance(round, mIdx, tIdx);
+            } else {
+                // 初めてのタッチ（または他方の切り替え）：勝ち上がり＋結果入力
+                advance(round, mIdx, tIdx);
+                openEditModal(teamName, false);
+            }
+        }
+
+        function advance(round, mIdx, tIdx) {
+            const match = tournament[round][mIdx];
+            const nextMap = { 32: 16, 16: 8, 8: 4, 4: 2 };
+            const nextRound = nextMap[round];
+
+            if (match.winner === tIdx) {
+                match.winner = null;
+                if (nextRound) {
+                    tournament[nextRound][Math.floor(mIdx/2)].teams[mIdx%2] = null;
+                    clearHigherRounds(nextRound, Math.floor(mIdx/2), mIdx%2);
+                }
+            } else {
+                match.winner = tIdx;
+                if (nextRound) {
+                    tournament[nextRound][Math.floor(mIdx/2)].teams[mIdx%2] = { ...match.teams[tIdx] };
+                }
+            }
+            [32, 16, 8, 4, 2].forEach(r => renderBracket(r));
+        }
+
+        function clearHigherRounds(round, mIdx, tIdx) {
+            const nextMap = { 16: 8, 8: 4, 4: 2 };
+            const nextRound = nextMap[round];
+            if (nextRound) {
+                const match = tournament[round][mIdx];
+                match.winner = null;
+                tournament[nextRound][Math.floor(mIdx/2)].teams[mIdx%2] = null;
+                clearHigherRounds(nextRound, Math.floor(mIdx/2), mIdx%2);
+            }
+        }
+
+        function renderPlayers() {
+            const container = document.getElementById('player-list');
+            const pData = db.players.reduce((acc, row) => {
+                const n = row.Player || "Unknown";
+                if (!acc[n]) acc[n] = { teams: [], total: row["Total Points"] || 0 };
+                acc[n].teams.push(row);
+                return acc;
+            }, {});
+            
+            container.innerHTML = Object.entries(pData).map(([name, info], idx) => `
+                <div class="mb-4 bg-neutral-900 border border-neutral-800 overflow-hidden shadow-xl">
+                    <div onclick="togglePlayer(${idx})" class="bg-neutral-800 p-4 flex justify-between items-center px-4 cursor-pointer">
+                        <span class="text-lg font-bold">${name}</span>
+                        <div class="flex items-center space-x-4">
+                            <div class="text-right">
+                                <span class="text-[9px] block text-neutral-500 font-bold uppercase">Total Points</span>
+                                <span class="text-2xl font-black text-yellow-500">${info.total}</span>
+                            </div>
+                            <span id="arrow-${idx}" class="text-neutral-500">▼</span>
+                        </div>
+                    </div>
+                    <div id="detail-${idx}" class="player-detail">
+                        ${info.teams.map(t => `
+                            <div class="flex p-4 border-b border-neutral-800 text-sm items-center">
+                                <div class="flex-1 flex items-center font-bold text-[13px]">
+                                    <img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">
+                                    <span>${t.Team}</span>
+                                </div>
+                                <div class="flex-1 text-center text-neutral-400 text-xs">${t.Result || '-'}</div>
+                                <div class="flex-1 text-right font-bold text-blue-500">${t.Points || 0} pt</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function togglePlayer(idx) {
+            const detail = document.getElementById(`detail-${idx}`);
+            const arrow = document.getElementById(`arrow-${idx}`);
+            const isOpen = detail.classList.toggle('open');
+            arrow.innerText = isOpen ? '▲' : '▼';
+        }
+
+        function renderRules() {
+            const container = document.getElementById('rules-list');
+            if (!db.rules.length) return;
+            const headers = Object.keys(db.rules[0]);
+            container.innerHTML = `<div class="mt-4 mx-2 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900"><div class="bg-neutral-800 p-3 px-4 font-bold text-xs tracking-widest text-neutral-300 uppercase">Points Rules</div><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="border-b border-neutral-800 text-neutral-500">${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr></thead><tbody class="divide-y divide-neutral-800">${db.rules.map(row => `<tr>${headers.map(h => `<td class="p-3 text-neutral-300">${row[h]}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+        }
+
+        let editTarget = { team: "", isGS: false };
+        function openEditModal(teamName, isGS) {
+            if (!teamName || teamName === "TBD") return;
+            editTarget = { team: teamName, isGS };
+            const row = db.result.find(d => d.Team === teamName);
+            document.getElementById('modal-team-name').innerText = teamName;
+            document.getElementById('modal-gs-fields').style.display = isGS ? 'block' : 'none';
+            if (isGS) {
+                document.getElementById('edit-win').value = row.Win || 0;
+                document.getElementById('edit-draw').value = row.Draw || 0;
+                document.getElementById('edit-lose').value = row.Lose || 0;
+            }
+            document.getElementById('edit-result-status').value = row.Result || "";
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        async function submitUpdate() {
+            const btn = document.getElementById('save-btn');
+            const payload = {
+                team: editTarget.team,
+                resultStatus: document.getElementById('edit-result-status').value
+            };
+            if (editTarget.isGS) {
+                payload.win = parseInt(document.getElementById('edit-win').value) || 0;
+                payload.draw = parseInt(document.getElementById('edit-draw').value) || 0;
+                payload.lose = parseInt(document.getElementById('edit-lose').value) || 0;
+            }
+            btn.innerText = "Saving..."; btn.disabled = true;
+            try {
+                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
+                setTimeout(async () => {
+                    await loadData(true); // データを再取得
+                    closeModal();
+                    btn.innerText = "Save"; btn.disabled = false;
+                }, 1500);
+            } catch (e) { alert("Error!"); btn.disabled = false; btn.innerText = "Save"; }
+        }
+
+        function showTab(tabId) {
+            activeTabId = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-content'));
+            document.getElementById(tabId).classList.add('active-content');
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-tab'));
+            const btnId = 'btn-' + tabId.replace('-tab', '');
+            if (document.getElementById(btnId)) document.getElementById(btnId).classList.add('active-tab');
+            window.scrollTo(0,0);
+        }
+
+        loadData(false); // 初回ロードはスタートページを表示
+    </script>
+</body>
+</html>
