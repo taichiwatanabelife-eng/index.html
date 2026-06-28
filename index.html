@@ -10,11 +10,13 @@
         .tab-content { display: none; padding-bottom: 140px; }
         .active-content { display: block; }
         
+        /* 下部メニュー：横スクロール */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; overflow-x: auto; padding: 12px 6px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(12px + env(safe-area-inset-bottom)); scrollbar-width: none; }
         .bottom-nav::-webkit-scrollbar { display: none; }
         .nav-item { color: #737373; text-align: center; font-size: 12px; font-weight: bold; flex-shrink: 0; padding: 8px 16px; border-radius: 20px; transition: all 0.2s; margin: 0 4px; }
         .nav-item.active-tab { background: #ffffff; color: #000000; }
 
+        /* GS表示 */
         .row-container { display: flex; align-items: center; width: 100%; background: #111; border-bottom: 1px solid #222; padding: 14px 2px; white-space: nowrap; font-size: 11px; }
         .col-team   { width: 115px; display: flex; align-items: center; font-weight: 900; padding-left: 6px; }
         .col-player { width: 75px; color: #525252; overflow: hidden; text-overflow: ellipsis; }
@@ -23,12 +25,12 @@
         .val-zero   { color: #333; }
         .flag-icon { width: 20px; height: 14px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0; }
 
+        /* トーナメント：光る演出 */
         .match-card { background: #111; border: 1px solid #262626; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
         .owner-ebi { border-left: 4px solid #ef4444 !important; }
         .owner-gatchi { border-left: 4px solid #3b82f6 !important; }
         .owner-taichi { border-left: 4px solid #10b981 !important; }
         
-        /* 勝利チームの光る演出 */
         .winner-row { 
             background: #262626 !important; 
             box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.4);
@@ -45,24 +47,26 @@
 </head>
 <body>
 
+    <!-- 画面ユニット（メニュー順に配置） -->
     <div id="player-tab" class="tab-content active-content"><div id="player-list"></div></div>
-    <div id="rules-tab" class="tab-content"><div id="rules-list"></div></div>
     <div id="gs-tab" class="tab-content"><div id="gs-list"></div></div>
     <div id="r32-tab" class="tab-content"><div id="r32-list" class="p-4"></div></div>
     <div id="r16-tab" class="tab-content"><div id="r16-list" class="p-4"></div></div>
     <div id="qf-tab" class="tab-content"><div id="qf-list" class="p-4"></div></div>
     <div id="sf-tab" class="tab-content"><div id="sf-list" class="p-4"></div></div>
     <div id="final-tab" class="tab-content"><div id="final-list" class="p-4"></div></div>
+    <div id="rules-tab" class="tab-content"><div id="rules-list"></div></div>
 
+    <!-- ナビゲーション -->
     <nav class="bottom-nav">
         <button id="btn-player" onclick="showTab('player-tab')" class="nav-item active-tab">Player</button>
-        <button id="btn-rules" onclick="showTab('rules-tab')" class="nav-item">Rules</button>
         <button id="btn-gs" onclick="showTab('gs-tab')" class="nav-item">GS</button>
         <button id="btn-r32" onclick="showTab('r32-tab')" class="nav-item">R32</button>
         <button id="btn-r16" onclick="showTab('r16-tab')" class="nav-item">R16</button>
         <button id="btn-qf" onclick="showTab('qf-tab')" class="nav-item">QF</button>
         <button id="btn-sf" onclick="showTab('sf-tab')" class="nav-item">SF</button>
         <button id="btn-final" onclick="showTab('final-tab')" class="nav-item">Final</button>
+        <button id="btn-rules" onclick="showTab('rules-tab')" class="nav-item">Rules</button>
     </nav>
 
     <div id="edit-modal" class="hidden fixed inset-0 modal-bg flex items-center justify-center p-4 z-[100]">
@@ -96,11 +100,10 @@
         const bracketOrder = ["南アフリカ", "カナダ", "オランダ", "モロッコ", "ドイツ", "パラグアイ", "フランス", "スウェーデン", "ベルギー", "セネガル", "アメリカ", "ボスニア・ヘルツェゴヴィナ", "スペイン", "オーストリア", "ポルトガル", "クロアチア", "ブラジル", "日本", "コートジボワール", "ノルウェー", "メキシコ", "エクアドル", "イングランド", "コンゴ", "スイス", "アルジェリア", "コロンビア", "ガーナ", "オーストラリア", "エジプト", "アルゼンチン", "カーボベルデ"];
 
         const statusRank = { "":0, "-":0, "GS敗退":1, "ベスト32":2, "ベスト16":3, "ベスト8":4, "4位":5, "3位":6, "準優勝":7, "優勝":8 };
-        const roundTargetRank = { 32: 3, 16: 4, 8: 5, 4: 7, 2: 8 }; // R32を勝つ = ベスト16以上
+        const roundTargetRank = { 32: 3, 16: 4, 8: 5, 4: 7, 2: 8 };
 
         let db = { result: [], players: [], rules: [] };
         let tournament = { 32: [], 16: [], 8: [], 4: [], 2: [] };
-        let activeTabId = 'player-tab';
 
         async function loadData(keepTab = true) {
             try {
@@ -113,7 +116,6 @@
         }
 
         function initTournamentStructure() {
-            // R32初期化
             tournament[32] = [];
             for (let i = 0; i < 16; i++) {
                 const t1 = db.result.find(d => d.Team === bracketOrder[i*2]);
@@ -125,13 +127,10 @@
                     ],
                     winner: null
                 };
-                // ステータスから勝者を自動判定
                 if (match.teams[0] && statusRank[match.teams[0].status] >= roundTargetRank[32]) match.winner = 0;
                 else if (match.teams[1] && statusRank[match.teams[1].status] >= roundTargetRank[32]) match.winner = 1;
                 tournament[32].push(match);
             }
-
-            // 以降のラウンド
             const rounds = [16, 8, 4, 2];
             rounds.forEach(r => {
                 const prevRound = r === 16 ? 32 : r === 8 ? 16 : r === 4 ? 8 : 4;
@@ -167,7 +166,6 @@
                 acc[g].push({ ...row, pts: w*3+d });
                 return acc;
             }, {});
-
             Object.keys(groups).sort().forEach(gName => {
                 const sorted = groups[gName].sort((a,b) => b.pts - a.pts);
                 let html = `<div class="mb-4"><div class="bg-neutral-800 text-neutral-500 p-2 px-4 font-bold text-[10px] tracking-widest uppercase">GROUP ${gName}</div><div class="row-container bg-neutral-900 text-[9px] font-bold text-neutral-600 border-b border-neutral-800"><div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">W</div><div class="col-val">D</div><div class="col-val">L</div><div class="col-result">RESULT</div></div>`;
@@ -194,7 +192,7 @@
                 match.teams.forEach((team, tIdx) => {
                     const ownerClass = team ? (ownerClasses[team.owner] || "") : "";
                     const isWinner = match.winner === tIdx;
-                    html += `<div onclick="handleTournamentClick(${round}, ${mIdx}, ${tIdx})" class="flex items-center justify-between p-4 transition-all duration-300 ${ownerClass} ${isWinner ? 'winner-row' : ''}">
+                    html += `<div id="node-${round}-${mIdx}-${tIdx}" onclick="handleTournamentClick(${round}, ${mIdx}, ${tIdx})" class="flex items-center justify-between p-4 transition-all duration-200 ${ownerClass} ${isWinner ? 'winner-row' : ''}">
                         <div class="flex items-center space-x-3 flex-1">
                             <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="flag-icon">
                             <span class="team-text text-[13px] font-bold ${!team ? 'text-neutral-800' : ''}">${team ? team.name : 'TBD'}</span>
@@ -206,13 +204,17 @@
             });
         }
 
+        // 爆速レスポンス：キャンセル時に即座に見た目を変える
         function handleTournamentClick(round, mIdx, tIdx) {
             const match = tournament[round][mIdx];
             const team = match.teams[tIdx];
             if (!team) return;
 
+            const element = document.getElementById(`node-${round}-${mIdx}-${tIdx}`);
+
             if (match.winner === tIdx) {
-                // キャンセル：ステータスを現在のラウンドに戻す（例：R16でキャンセルしたらベスト16に戻す）
+                // キャンセル：即座にクラスを外す（視覚効果）
+                element.classList.remove('winner-row');
                 const currentRoundStatus = round === 32 ? "ベスト32" : round === 16 ? "ベスト16" : round === 8 ? "ベスト8" : round === 4 ? "4位" : "準優勝";
                 updateStatusDirectly(team.name, currentRoundStatus);
             } else {
@@ -224,8 +226,9 @@
         async function updateStatusDirectly(teamName, status) {
             try {
                 await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify({ team: teamName, resultStatus: status }) });
-                setTimeout(() => loadData(true), 1200);
-            } catch (e) { alert("Error!"); }
+                // 通信後に裏でデータを同期
+                loadData(true);
+            } catch (e) { console.error(e); }
         }
 
         function renderPlayers() {
@@ -301,7 +304,6 @@
         }
 
         function showTab(tabId) {
-            activeTabId = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-content'));
             document.getElementById(tabId).classList.add('active-content');
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-tab'));
