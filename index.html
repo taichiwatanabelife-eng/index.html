@@ -10,7 +10,7 @@
         .tab-content { display: none; padding-bottom: 140px; }
         .active-content { display: block; }
         
-        /* 下部メニュー：横スクロール可能 */
+        /* 下部メニュー：横スクロール */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; overflow-x: auto; padding: 12px 6px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(12px + env(safe-area-inset-bottom)); scrollbar-width: none; }
         .bottom-nav::-webkit-scrollbar { display: none; }
         .nav-item { color: #737373; text-align: center; font-size: 12px; font-weight: bold; flex-shrink: 0; padding: 8px 16px; border-radius: 20px; transition: all 0.2s; margin: 0 4px; }
@@ -25,15 +25,22 @@
         .val-zero   { color: #333; }
         .flag-icon { width: 20px; height: 14px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0; }
 
-        /* トーナメント表示 */
-        .match-card { background: #111; border: 1px solid #262626; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+        /* トーナメント：光る演出 */
+        .match-card { background: #111; border: 1px solid #262626; border-radius: 12px; margin-bottom: 12px; overflow: hidden; transition: all 0.3s; }
         .owner-ebi { border-left: 4px solid #ef4444 !important; }
         .owner-gatchi { border-left: 4px solid #3b82f6 !important; }
         .owner-taichi { border-left: 4px solid #10b981 !important; }
-        .winner-row { background: #262626 !important; }
-        .winner-row .team-text { color: #fbbf24 !important; font-weight: 900; }
+        
+        /* 勝者の「光る」スタイル */
+        .winner-row { 
+            background: #262626 !important; 
+            box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.3);
+            border-top: 1px solid rgba(251, 191, 36, 0.5);
+            border-bottom: 1px solid rgba(251, 191, 36, 0.5);
+        }
+        .winner-row .team-text { color: #fbbf24 !important; font-weight: 900; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
 
-        /* プレイヤー折りたたみ */
+        /* プレイヤー詳細 */
         .player-detail { display: none; }
         .player-detail.open { display: block; }
 
@@ -44,7 +51,7 @@
 </head>
 <body>
 
-    <!-- 画面ユニット（ご要望の順序） -->
+    <!-- 画面ユニット：ご要望の順序 -->
     <div id="player-tab" class="tab-content active-content"><div id="player-list"></div></div>
     <div id="rules-tab" class="tab-content"><div id="rules-list"></div></div>
     <div id="gs-tab" class="tab-content"><div id="gs-list"></div></div>
@@ -106,16 +113,12 @@
             try {
                 const res = await fetch(API_URL);
                 db = await res.json();
-                renderAll();
+                renderGS();
+                initTournament();
+                renderPlayers();
+                renderRules();
                 if (!keepTab) showTab('player-tab');
             } catch (e) { console.error(e); }
-        }
-
-        function renderAll() {
-            renderGS();
-            initTournament();
-            renderPlayers();
-            renderRules();
         }
 
         function renderGS() {
@@ -173,7 +176,9 @@
                 let html = `<div class="match-card">`;
                 match.teams.forEach((team, tIdx) => {
                     const ownerClass = team ? (ownerClasses[team.owner] || "") : "";
-                    html += `<div onclick="handleTournamentClick(${round}, ${mIdx}, ${tIdx}, '${team?team.name:''}')" class="flex items-center justify-between p-3.5 transition-all ${ownerClass} ${match.winner === tIdx ? 'winner-row' : ''}">
+                    const isWinner = match.winner === tIdx;
+                    html += `<div onclick="handleTournamentClick(${round}, ${mIdx}, ${tIdx}, '${team?team.name:''}')" 
+                                  class="flex items-center justify-between p-4 transition-all duration-300 ${ownerClass} ${isWinner ? 'winner-row' : ''}">
                         <div class="flex items-center space-x-3 flex-1">
                             <img src="https://flagcdn.com/w40/${team ? team.flag : 'un'}.png" class="flag-icon">
                             <span class="team-text text-[13px] font-bold ${!team ? 'text-neutral-800' : ''}">${team ? team.name : 'TBD'}</span>
@@ -190,10 +195,10 @@
             if (!match.teams[tIdx]) return;
 
             if (match.winner === tIdx) {
-                // すでに勝者の場合はキャンセルのみ
+                // すでに光っている（勝者）の場合はキャンセルのみ
                 advance(round, mIdx, tIdx);
             } else {
-                // 初めてのタッチ（または他方の切り替え）：勝ち上がり＋結果入力
+                // 初めてのタッチ：勝ち上がり（光らせる）＋ 結果入力モーダル
                 advance(round, mIdx, tIdx);
                 openEditModal(teamName, false);
             }
@@ -241,19 +246,19 @@
             
             container.innerHTML = Object.entries(pData).map(([name, info], idx) => `
                 <div class="mb-4 bg-neutral-900 border border-neutral-800 overflow-hidden shadow-xl">
-                    <div onclick="togglePlayer(${idx})" class="bg-neutral-800 p-4 flex justify-between items-center px-4 cursor-pointer">
-                        <span class="text-lg font-bold">${name}</span>
+                    <div onclick="togglePlayer(${idx})" class="bg-neutral-800 p-5 flex justify-between items-center px-4 cursor-pointer">
+                        <span class="text-xl font-bold">${name}</span>
                         <div class="flex items-center space-x-4">
                             <div class="text-right">
-                                <span class="text-[9px] block text-neutral-500 font-bold uppercase">Total Points</span>
-                                <span class="text-2xl font-black text-yellow-500">${info.total}</span>
+                                <span class="text-[10px] block text-neutral-500 font-bold uppercase">Total Points</span>
+                                <span class="text-3xl font-black text-yellow-500">${info.total}</span>
                             </div>
                             <span id="arrow-${idx}" class="text-neutral-500">▼</span>
                         </div>
                     </div>
                     <div id="detail-${idx}" class="player-detail">
                         ${info.teams.map(t => `
-                            <div class="flex p-4 border-b border-neutral-800 text-sm items-center">
+                            <div class="flex p-4 border-b border-neutral-800 text-sm items-center bg-black/40">
                                 <div class="flex-1 flex items-center font-bold text-[13px]">
                                     <img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon">
                                     <span>${t.Team}</span>
@@ -314,7 +319,7 @@
             try {
                 await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
                 setTimeout(async () => {
-                    await loadData(true); // データを再取得
+                    await loadData(true); 
                     closeModal();
                     btn.innerText = "Save"; btn.disabled = false;
                 }, 1500);
@@ -331,7 +336,7 @@
             window.scrollTo(0,0);
         }
 
-        loadData(false); // 初回ロードはスタートページを表示
+        loadData(false);
     </script>
 </body>
 </html>
