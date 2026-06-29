@@ -10,32 +10,33 @@
         .tab-content { display: none; padding-bottom: 140px; }
         .active-content { display: block; }
         
-        /* 下部メニュー：iPhone15一画面に収める設定 (7項目) */
+        /* 下部メニュー：iPhone15一画面 (7項目) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; justify-content: space-around; padding: 10px 1px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
         .nav-item { color: #737373; text-align: center; font-size: 10px; font-weight: bold; flex: 1; padding: 8px 0; border-radius: 10px; transition: all 0.2s; margin: 0 1px; white-space: nowrap; }
         .nav-item.active-tab { background: #ffffff; color: #000000; }
 
-        /* リストデザイン */
-        .row-container { display: flex; align-items: center; width: 100%; background: #111; border-bottom: 1px solid #222; padding: 14px 2px; white-space: nowrap; font-size: 11px; }
-        .col-team   { width: 115px; display: flex; align-items: center; font-weight: 900; padding-left: 6px; }
-        .col-player { width: 75px; color: #525252; overflow: hidden; text-overflow: ellipsis; }
-        .col-val    { width: 34px; text-align: center; font-weight: bold; }
+        /* GS表示ズレ修正版 */
+        .row-container { display: flex; align-items: center; width: 100%; background: #111; border-bottom: 1px solid #222; padding: 14px 0; white-space: nowrap; font-size: 11px; }
+        .col-team   { width: 115px; display: flex; align-items: center; font-weight: 900; padding-left: 8px; }
+        .col-player { width: 70px; color: #525252; overflow: hidden; text-overflow: ellipsis; padding-left: 2px; }
+        .col-val    { width: 33px; text-align: center; font-weight: bold; }
         .col-result { width: 105px; text-align: center; font-weight: 900; color: #3b82f6; }
         .val-zero   { color: #333; }
         .flag-icon { width: 20px; height: 14px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0; }
 
+        /* タイトルバー統一デザイン */
+        .section-title { font-size: 10px; font-weight: 900; color: #fbbf24; letter-spacing: 0.15em; padding: 18px 8px 8px 8px; text-transform: uppercase; border-bottom: 1px solid #1a1a1a; margin-bottom: 10px; }
+
         /* トーナメントカード */
         .match-card { background: #111; border: 1px solid #262626; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-        .section-title { font-size: 10px; font-weight: 900; color: #fbbf24; letter-spacing: 0.1em; padding: 15px 4px 5px 4px; text-transform: uppercase; }
         .owner-ebi { border-left: 4px solid #ef4444 !important; }
         .owner-gatchi { border-left: 4px solid #3b82f6 !important; }
         .owner-taichi { border-left: 4px solid #10b981 !important; }
-        
         .winner-row { 
             background: #262626 !important; 
             box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.4);
-            border-top: 1px solid rgba(251, 191, 36, 0.5);
-            border-bottom: 1px solid rgba(251, 191, 36, 0.5);
+            border-top: 1px solid rgba(251, 191, 36, 0.3);
+            border-bottom: 1px solid rgba(251, 191, 36, 0.3);
         }
         .winner-row .team-text { color: #fbbf24 !important; font-weight: 900; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
 
@@ -65,6 +66,7 @@
         <button id="btn-rules" onclick="showTab('rules-tab')" class="nav-item">Rules</button>
     </nav>
 
+    <!-- モーダル -->
     <div id="edit-modal" class="hidden fixed inset-0 modal-bg flex items-center justify-center p-4 z-[100]">
         <div class="bg-[#171717] p-6 rounded-2xl w-full max-w-sm border border-neutral-800 shadow-2xl">
             <h2 id="modal-team-name" class="text-xl font-bold mb-6 text-white text-center">Update Status</h2>
@@ -91,7 +93,13 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyNG9kLk837e5hbvoC_G2ten_HyPID0Znp3_atCkieLVkP8FrGit5skyaSbjHnyBw3S/exec";
         
-        const flagMap = { "日本": "jp", "韓国": "kr", "中国": "cn", "オーストラリア": "au", "サウジアラビア": "sa", "イラン": "ir", "カタール": "qa", "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "アメリカ": "us", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "アルゼンチン": "ar", "ブラジル": "br", "ウルグアイ": "uy", "コロンビア": "co", "モロッコ": "ma", "セネガル": "sn", "ハイチ": "ht", "キュラソー": "cw", "カーボベルデ": "cv", "コンゴ": "cg", "ボスニア・ヘルツェゴヴィナ": "ba", "チェコ": "cz", "南アフリカ": "za", "パラグアイ": "py", "スウェーデン": "se", "オーストリア": "at", "ノルウェー": "no", "エクアドル": "ec", "アルジェリア": "dz", "ガーナ": "gh", "エジプト": "eg", "コートジボワール": "ci" };
+        const flagMap = { 
+            "日本": "jp", "韓国": "kr", "中国": "cn", "オーストラリア": "au", "サウジアラビア": "sa", "イラン": "ir", "カタール": "qa", "イラク": "iq", "ヨルダン": "jo", "ウズベキスタン": "uz",
+            "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "スイス": "ch", "デンマーク": "dk", "ポーランド": "pl", "ベルギー": "be", "トルコ": "tr", "チェコ": "cz", "オーストリア": "at", "スコットランド": "gb-sct", "ウェールズ": "gb-wls", "ボスニア・ヘルツェゴヴィナ": "ba", "ノルウェー": "no", "スウェーデン": "se",
+            "ブラジル": "br", "アルゼンチン": "ar", "ウルグアイ": "uy", "コロンビア": "co", "エクアドル": "ec", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "アメリカ": "us", "パナマ": "pa",
+            "モロッコ": "ma", "セネガル": "sn", "チュニジア": "tn", "エジプト": "eg", "ナイジェリア": "ng", "アルジェリア": "dz", "ガーナ": "gh", "南アフリカ": "za", "コートジボワール": "ci", "コンゴ": "cg", "ハイチ": "ht", "キュラソー": "cw", "カーボベルデ": "cv", "ニュージーランド": "nz"
+        };
+        
         const ownerClasses = { "えび": "owner-ebi", "がっち": "owner-gatchi", "たいち": "owner-taichi" };
         const bracketOrder = ["南アフリカ", "カナダ", "オランダ", "モロッコ", "ドイツ", "パラグアイ", "フランス", "スウェーデン", "ベルギー", "セネガル", "アメリカ", "ボスニア・ヘルツェゴヴィナ", "スペイン", "オーストリア", "ポルトガル", "クロアチア", "ブラジル", "日本", "コートジボワール", "ノルウェー", "メキシコ", "エクアドル", "イングランド", "コンゴ", "スイス", "アルジェリア", "コロンビア", "ガーナ", "オーストラリア", "エジプト", "アルゼンチン", "カーボベルデ"];
 
@@ -157,17 +165,19 @@
 
         function renderAll() {
             renderGS();
-            [32, 16, 8].forEach(r => renderBracket(r));
+            renderBracket(32, "Round of 32");
+            renderBracket(16, "Round of 16");
+            renderBracket(8, "Quarter Finals");
             renderSFFinal();
             renderPlayers();
             renderRules();
         }
 
-        function renderBracket(round) {
+        function renderBracket(round, title) {
             const id = `${round === 32 ? 'r32' : round === 16 ? 'r16' : 'qf'}-list`;
             const container = document.getElementById(id);
             if(!container) return;
-            container.innerHTML = "";
+            container.innerHTML = `<div class="section-title">${title}</div>`;
             tournament[round].forEach((match, mIdx) => {
                 container.innerHTML += createMatchHtml(match, round, mIdx);
             });
@@ -236,7 +246,11 @@
             }, {});
             Object.keys(groups).sort().forEach(gName => {
                 const sorted = groups[gName].sort((a,b) => b.pts - a.pts);
-                let html = `<div class="mb-4"><div class="bg-neutral-800 text-neutral-500 p-2 px-4 font-bold text-[10px] tracking-widest uppercase">GROUP ${gName}</div><div class="row-container bg-neutral-900 text-[9px] font-bold text-neutral-600 border-b border-neutral-800"><div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">W</div><div class="col-val">D</div><div class="col-val">L</div><div class="col-result">RESULT</div></div>`;
+                let html = `<div class="mb-4">
+                    <div class="bg-neutral-800 text-neutral-500 p-2 px-4 font-bold text-[10px] tracking-widest uppercase">GROUP ${gName}</div>
+                    <div class="row-container bg-neutral-900 text-[9px] font-bold text-neutral-600 border-b border-neutral-800">
+                        <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">W</div><div class="col-val">D</div><div class="col-val">L</div><div class="col-result">RESULT</div>
+                    </div>`;
                 sorted.forEach(row => {
                     html += `<div class="row-container" onclick="openEditModal('${row.Team}', true)">
                         <div class="col-team"><img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon"><span>${row.Team}</span></div>
