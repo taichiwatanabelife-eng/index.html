@@ -284,4 +284,63 @@
 
         function togglePlayer(idx) {
             const detail = document.getElementById(`detail-${idx}`);
-            const arrow = document.getElementById(`arrow-${
+            const arrow = document.getElementById(`arrow-${idx}`);
+            const isOpen = detail.classList.toggle('open');
+            arrow.innerText = isOpen ? '▲' : '▼';
+        }
+
+        function renderRules() {
+            const container = document.getElementById('rules-list');
+            if (!db.rules.length) return;
+            const headers = Object.keys(db.rules[0]);
+            container.innerHTML = `<div class="mt-4 mx-2 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900"><div class="bg-neutral-800 p-3 px-4 font-bold text-xs tracking-widest text-neutral-300 uppercase">Points Rules</div><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="border-b border-neutral-800 text-neutral-500">${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr></thead><tbody class="divide-y divide-neutral-800">${db.rules.map(row => `<tr>${headers.map(h => `<td class="p-3 text-neutral-300">${row[h]}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+        }
+
+        let editTarget = { team: "", isGS: false };
+        function openEditModal(teamName, isGS) {
+            if (!teamName || teamName === "TBD") return;
+            editTarget = { team: teamName, isGS };
+            const row = db.result.find(d => d.Team === teamName);
+            document.getElementById('modal-team-name').innerText = teamName;
+            document.getElementById('modal-gs-fields').style.display = isGS ? 'block' : 'none';
+            if (isGS) {
+                document.getElementById('edit-win').value = row.Win || 0;
+                document.getElementById('edit-draw').value = row.Draw || 0;
+                document.getElementById('edit-lose').value = row.Lose || 0;
+            }
+            document.getElementById('edit-result-status').value = row.Result || "";
+            document.getElementById('edit-modal').classList.remove('hidden');
+            const btn = document.getElementById('save-btn');
+            btn.innerText = "Save"; btn.disabled = false;
+        }
+
+        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        async function submitUpdate() {
+            const btn = document.getElementById('save-btn');
+            const payload = { team: editTarget.team, resultStatus: document.getElementById('edit-result-status').value };
+            if (editTarget.isGS) {
+                payload.win = parseInt(document.getElementById('edit-win').value) || 0;
+                payload.draw = parseInt(document.getElementById('edit-draw').value) || 0;
+                payload.lose = parseInt(document.getElementById('edit-lose').value) || 0;
+            }
+            btn.innerText = "Saving..."; btn.disabled = true;
+            try {
+                await fetch(API_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify(payload) });
+                setTimeout(async () => { await loadData(true); closeModal(); }, 1500);
+            } catch (e) { alert("Error!"); btn.disabled = false; btn.innerText = "Save"; }
+        }
+
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-content'));
+            document.getElementById(tabId).classList.add('active-content');
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active-tab'));
+            const btnId = 'btn-' + tabId.replace('-tab', '');
+            if (document.getElementById(btnId)) document.getElementById(btnId).classList.add('active-tab');
+            window.scrollTo(0,0);
+        }
+
+        loadData(false);
+    </script>
+</body>
+</html>
