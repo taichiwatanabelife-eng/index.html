@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WC2026 Final Stage</title>
+    <title>WC2026 Ultimate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background: #000000; color: #ffffff; -webkit-tap-highlight-color: transparent; }
         .tab-content { display: none; padding-bottom: 140px; }
         .active-content { display: block; }
         
-        /* 下部メニュー：iPhone15一画面に収める設定 */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; justify-content: space-around; padding: 10px 2px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-        .nav-item { color: #737373; text-align: center; font-size: 10px; font-weight: bold; flex: 1; padding: 8px 0; border-radius: 12px; transition: all 0.2s; margin: 0 1px; white-space: nowrap; }
+        /* 下部メニュー：iPhone15一画面に収める設定 (7項目) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; justify-content: space-around; padding: 10px 1px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+        .nav-item { color: #737373; text-align: center; font-size: 10px; font-weight: bold; flex: 1; padding: 8px 0; border-radius: 10px; transition: all 0.2s; margin: 0 1px; white-space: nowrap; }
         .nav-item.active-tab { background: #ffffff; color: #000000; }
 
         /* リストデザイン */
@@ -112,7 +112,6 @@
         }
 
         function initTournamentStructure() {
-            // R32
             tournament[32] = [];
             for (let i = 0; i < 16; i++) {
                 const t1 = db.result.find(d => d.Team === bracketOrder[i*2]);
@@ -122,8 +121,6 @@
                 else if (match.teams[1] && statusRank[match.teams[1].status] >= roundTargetRank[32]) match.winner = 1;
                 tournament[32].push(match);
             }
-
-            // R16, QF, SF
             [16, 8, 4].forEach(r => {
                 const prev = r === 16 ? 32 : r === 8 ? 16 : 8;
                 tournament[r] = [];
@@ -138,20 +135,14 @@
                     tournament[r].push(match);
                 }
             });
-
-            // Final & 3rd Place (SFの結果から生成)
             const sf1 = tournament[4][0];
             const sf2 = tournament[4][1];
-            
-            // Final
             const f1 = sf1.winner !== null ? sf1.teams[sf1.winner] : null;
             const f2 = sf2.winner !== null ? sf2.teams[sf2.winner] : null;
             const finalMatch = { teams: [f1, f2], winner: null };
             if (f1 && statusRank[f1.status] >= roundTargetRank[2]) finalMatch.winner = 0;
             else if (f2 && statusRank[f2.status] >= roundTargetRank[2]) finalMatch.winner = 1;
             tournament[2] = [finalMatch];
-
-            // 3rd Place
             const t3_1 = sf1.winner !== null ? sf1.teams[1 - sf1.winner] : null;
             const t3_2 = sf2.winner !== null ? sf2.teams[1 - sf2.winner] : null;
             const thirdMatch = { teams: [t3_1, t3_2], winner: null };
@@ -167,7 +158,7 @@
         function renderAll() {
             renderGS();
             [32, 16, 8].forEach(r => renderBracket(r));
-            renderSF-Final();
+            renderSFFinal();
             renderPlayers();
             renderRules();
         }
@@ -175,20 +166,20 @@
         function renderBracket(round) {
             const id = `${round === 32 ? 'r32' : round === 16 ? 'r16' : 'qf'}-list`;
             const container = document.getElementById(id);
+            if(!container) return;
             container.innerHTML = "";
             tournament[round].forEach((match, mIdx) => {
                 container.innerHTML += createMatchHtml(match, round, mIdx);
             });
         }
 
-        function renderSF-Final() {
+        function renderSFFinal() {
             const container = document.getElementById('sf-final-list');
+            if(!container) return;
             container.innerHTML = `<div class="section-title">Semi Finals</div>`;
             tournament[4].forEach((m, i) => container.innerHTML += createMatchHtml(m, 4, i));
-            
             container.innerHTML += `<div class="section-title">3rd Place Match</div>`;
             container.innerHTML += createMatchHtml(tournament["3rd"][0], "3rd", 0);
-
             container.innerHTML += `<div class="section-title">Final</div>`;
             container.innerHTML += createMatchHtml(tournament[2][0], 2, 0);
         }
@@ -233,6 +224,7 @@
 
         function renderGS() {
             const container = document.getElementById('gs-list');
+            if(!container) return;
             container.innerHTML = "";
             const groups = db.result.reduce((acc, row) => {
                 const g = row.Group || "-";
@@ -261,6 +253,7 @@
 
         function renderPlayers() {
             const container = document.getElementById('player-list');
+            if(!container) return;
             const pData = db.players.reduce((acc, row) => {
                 const n = row.Player || "Unknown";
                 if (!acc[n]) acc[n] = { teams: [], total: row["Total Points"] || 0 };
@@ -285,13 +278,14 @@
         function togglePlayer(idx) {
             const detail = document.getElementById(`detail-${idx}`);
             const arrow = document.getElementById(`arrow-${idx}`);
+            if(!detail) return;
             const isOpen = detail.classList.toggle('open');
             arrow.innerText = isOpen ? '▲' : '▼';
         }
 
         function renderRules() {
             const container = document.getElementById('rules-list');
-            if (!db.rules.length) return;
+            if (!container || !db.rules.length) return;
             const headers = Object.keys(db.rules[0]);
             container.innerHTML = `<div class="mt-4 mx-2 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900"><div class="bg-neutral-800 p-3 px-4 font-bold text-xs tracking-widest text-neutral-300 uppercase">Points Rules</div><div class="overflow-x-auto"><table class="w-full text-left text-xs"><thead><tr class="border-b border-neutral-800 text-neutral-500">${headers.map(h => `<th class="p-3">${h}</th>`).join('')}</tr></thead><tbody class="divide-y divide-neutral-800">${db.rules.map(row => `<tr>${headers.map(h => `<td class="p-3 text-neutral-300">${row[h]}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
         }
