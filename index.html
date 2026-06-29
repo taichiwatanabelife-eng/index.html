@@ -12,30 +12,29 @@
         
         /* 下部メニュー：iPhone15一画面 (7項目) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #171717; display: flex; justify-content: space-around; padding: 10px 1px; z-index: 50; border-top: 1px solid #262626; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-        .nav-item { color: #737373; text-align: center; font-size: 10px; font-weight: bold; flex: 1; padding: 8px 0; border-radius: 10px; transition: all 0.2s; margin: 0 1px; white-space: nowrap; }
+        .nav-item { color: #737373; text-align: center; font-size: 9.5px; font-weight: bold; flex: 1; padding: 8px 0; border-radius: 10px; transition: all 0.2s; margin: 0 1px; white-space: nowrap; }
         .nav-item.active-tab { background: #ffffff; color: #000000; }
 
-        /* GS/Player共通グリッド：昨日までの見やすい比率 */
-        .grid-row {
+        /* GS表示：ズレを物理的に不可能にするグリッド設定 */
+        .gs-grid {
             display: grid;
-            grid-template-cols: 1.2fr 0.8fr 35px 35px 35px 1.1fr;
+            grid-template-cols: 140px 50px 32px 32px 32px 1fr;
             align-items: center;
             width: 100%;
-            padding: 12px 4px;
             font-size: 11px;
-            border-bottom: 1px solid #222;
             background: #111;
         }
-        .header-row { background: #262626; font-weight: bold; color: #737373; font-size: 10px; border-bottom: 2px solid #333; }
-
-        .col-team { display: flex; align-items: center; font-weight: 900; overflow: hidden; white-space: nowrap; padding-left: 4px; }
-        .col-player { color: #525252; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .gs-header { background: #262626; font-weight: bold; color: #737373; font-size: 9px; padding: 10px 0; border-bottom: 2px solid #333; position: sticky; top: 0; z-index: 10; }
+        .gs-row { border-bottom: 1px solid #222; padding: 14px 0; }
+        
+        .col-team { display: flex; align-items: center; font-weight: 900; overflow: hidden; white-space: nowrap; padding-left: 8px; }
+        .col-player { color: #525252; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; padding-left: 2px; }
         .col-val { text-align: center; font-weight: bold; }
-        .col-result { text-align: center; font-weight: 900; color: #3b82f6; overflow: hidden; text-overflow: ellipsis; }
+        .col-result { text-align: center; font-weight: 900; color: #3b82f6; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
         .val-zero { color: #333; }
-        .flag-icon { width: 18px; height: 12px; margin-right: 5px; border: 1px solid #333; flex-shrink: 0; }
+        .flag-icon { width: 18px; height: 12px; margin-right: 6px; border: 1px solid #333; flex-shrink: 0; }
 
-        /* タイトルバー */
+        /* デザイン統一タイトルバー */
         .section-title { font-size: 10px; font-weight: 900; color: #fbbf24; letter-spacing: 0.15em; padding: 18px 8px 8px 8px; text-transform: uppercase; border-bottom: 1px solid #1a1a1a; margin-bottom: 10px; }
 
         /* トーナメント */
@@ -43,28 +42,23 @@
         .owner-ebi { border-left: 4px solid #ef4444 !important; }
         .owner-gatchi { border-left: 4px solid #3b82f6 !important; }
         .owner-taichi { border-left: 4px solid #10b981 !important; }
-        
-        .winner-row { 
-            background: #262626 !important; 
-            box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.4);
-            border-top: 1px solid rgba(251, 191, 36, 0.5);
-            border-bottom: 1px solid rgba(251, 191, 36, 0.5);
-        }
-        .winner-row .team-text { color: #fbbf24 !important; font-weight: 900; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+        .winner-row { background: #262626 !important; box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.3); }
+        .winner-row .team-text { color: #fbbf24 !important; font-weight: 900; text-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
 
-        /* Player表示：1行で見やすく */
-        .player-row-simple {
+        /* Player表示：1行に収めるグリッド */
+        .player-row {
             display: grid;
-            grid-template-cols: 1.2fr 1.2fr 1fr;
+            grid-template-cols: 140px 1fr 65px;
             align-items: center;
-            padding: 10px 12px;
+            padding: 12px 10px;
             border-bottom: 1px solid #262626;
             background: rgba(0,0,0,0.4);
             font-size: 12px;
         }
-
         .player-detail { display: none; }
         .player-detail.open { display: block; }
+
+        /* モーダル */
         .modal-bg { background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(8px); }
         input, select { background: #262626 !important; border: 1px solid #404040 !important; color: white !important; outline: none; }
     </style>
@@ -118,9 +112,9 @@
         
         const flagMap = { 
             "日本": "jp", "韓国": "kr", "中国": "cn", "オーストラリア": "au", "サウジアラビア": "sa", "イラン": "ir", "カタール": "qa", "イラク": "iq", "ヨルダン": "jo", "ウズベキスタン": "uz", "パナマ": "pa",
-            "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "スイス": "ch", "デンマーク": "dk", "ポーランド": "pl", "ベルギー": "be", "トルコ": "tr", "チェコ": "cz", "オーストリア": "at", "スコットランド": "gb-sct", "ウェールズ": "gb-wls", "ボスニア・ヘルツェゴヴィナ": "ba", "ノルウェー": "no", "スウェーデン": "se",
-            "ブラジル": "br", "アルゼンチン": "ar", "ウルグアイ": "uy", "コロンビア": "co", "エクアドル": "ec", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "アメリカ": "us", "コートジボワール": "ci",
-            "モロッコ": "ma", "セネガル": "sn", "チュニジア": "tn", "エジプト": "eg", "ナイジェリア": "ng", "アルジェリア": "dz", "ガーナ": "gh", "南アフリカ": "za", "コンゴ": "cg", "ハイチ": "ht", "キュラソー": "cw", "カーボベルデ": "cv", "ニュージーランド": "nz"
+            "フランス": "fr", "スペイン": "es", "ドイツ": "de", "イタリア": "it", "イングランド": "gb", "ポルトガル": "pt", "オランダ": "nl", "クロアチア": "hr", "スイス": "ch", "デンマーク": "dk", "ポーランド": "pl", "ベルギー": "be", "トルコ": "tr", "チェコ": "cz", "オーストリア": "at", "スコットランド": "gb-sct", "ウェールズ": "gb-wls", "ボスニア・ヘルツェゴヴィナ": "ba", "ノルウェー": "no", "スウェーデン": "se", "ハンガリー": "hu", "セルビア": "rs",
+            "ブラジル": "br", "アルゼンチン": "ar", "ウルグアイ": "uy", "コロンビア": "co", "エクアドル": "ec", "メキシコ": "mx", "mexico": "mx", "カナダ": "ca", "アメリカ": "us", "コスタリカ": "cr", "ジャマイカ": "jm",
+            "モロッコ": "ma", "セネガル": "sn", "チュニジア": "tn", "エジプト": "eg", "ナイジェリア": "ng", "アルジェリア": "dz", "ガーナ": "gh", "南アフリカ": "za", "コートジボワール": "ci", "コンゴ": "cg", "コンゴ民主共和国": "cd", "ハイチ": "ht", "キュラソー": "cw", "カーボベルデ": "cv", "ニュージーランド": "nz"
         };
         
         const ownerClasses = { "えび": "owner-ebi", "がっち": "owner-gatchi", "たいち": "owner-taichi" };
@@ -199,12 +193,12 @@
                 const sorted = groups[gName].sort((a,b) => b.pts - a.pts);
                 let html = `<div class="mb-4">
                     <div class="bg-neutral-800 text-neutral-500 p-2 px-4 font-bold text-[10px] tracking-widest uppercase">GROUP ${gName}</div>
-                    <div class="grid-row header-row">
+                    <div class="gs-grid gs-header">
                         <div class="col-team">TEAM</div><div class="col-player">PLAYER</div><div class="col-val">W</div><div class="col-val">D</div><div class="col-val">L</div><div class="col-result">RESULT</div>
                     </div>`;
                 sorted.forEach(row => {
                     const win = parseInt(row.Win)||0; const draw = parseInt(row.Draw)||0; const lose = parseInt(row.Lose)||0;
-                    html += `<div class="grid-row" onclick="openEditModal('${row.Team}', true)">
+                    html += `<div class="gs-grid gs-row" onclick="openEditModal('${row.Team}', true)">
                         <div class="col-team"><img src="https://flagcdn.com/w40/${flagMap[row.Team] || 'un'}.png" class="flag-icon"><span>${row.Team}</span></div>
                         <div class="col-player">${row.Player || '-'}</div>
                         <div class="col-val ${win > 0 ? '' : 'val-zero'}">${win}</div>
@@ -286,7 +280,7 @@
                     </div>
                     <div id="detail-${idx}" class="player-detail">
                         ${info.teams.map(t => `
-                            <div class="player-row-simple">
+                            <div class="player-row">
                                 <div class="col-team" style="padding-left:0;"><img src="https://flagcdn.com/w40/${flagMap[t.Team] || 'un'}.png" class="flag-icon"><span>${t.Team}</span></div>
                                 <div class="text-center text-neutral-400 text-[11px]">${t.Result || '-'}</div>
                                 <div class="text-right font-bold text-blue-500" style="padding-right:5px;">${t.Points || 0} pt</div>
